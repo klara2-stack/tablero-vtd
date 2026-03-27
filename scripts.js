@@ -4,13 +4,13 @@ import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/f
 // === 1. CONFIGURACIÓN DE FIREBASE === 
 // (Deberás rellenar esto una vez crees tu proyecto gratis en console.firebase.google.com)
 const firebaseConfig = {
-    apiKey: "AIzaSyBvaUmun5n5_ZpT3VkwsCeRWQ9Eas6UAFc",
-    authDomain: "tablero-comunicaciones-vtd.firebaseapp.com",
-    projectId: "tablero-comunicaciones-vtd",
-    storageBucket: "tablero-comunicaciones-vtd.firebasestorage.app",
-    messagingSenderId: "783962170954",
-    appId: "1:783962170954:web:421623cb0f02f0bfb368b3"
-    measurementId: "G-HD0VGPF494"
+  apiKey: "AIzaSyBvaUmun5n5_ZpT3VkwsCeRWQ9Eas6UAFc",
+  authDomain: "tablero-comunicaciones-vtd.firebaseapp.com",
+  projectId: "tablero-comunicaciones-vtd",
+  storageBucket: "tablero-comunicaciones-vtd.firebasestorage.app",
+  messagingSenderId: "783962170954",
+  appId: "1:783962170954:web:421623cb0f02f0bfb368b3",
+  measurementId: "G-HD0VGPF494"
 };
 
 const app = initializeApp(firebaseConfig);
