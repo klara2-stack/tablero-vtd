@@ -713,3 +713,77 @@ tr.row-selected td.checkbox-cell {
 .toolbar-close:hover {
   color: white;
 }
+
+.side-panel {
+  position: fixed;
+  right: -400px;
+  /* Oculto por defecto */
+  top: 0;
+  width: 400px;
+  height: 100%;
+  background-color: var(--bg-sidebar);
+  border-left: 2px solid var(--border-color);
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+  transition: 0.3s ease;
+  z-index: 1000;
+  color: var(--text-main);
+}
+
+.side-panel.open {
+  right: 0;
+  /* Se desliza hacia adentro */
+}
+
+.panel-header {
+  padding: 20px;
+  background-color: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-field {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: var(--bg-main);
+  border-radius: 8px;
+}
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+.group-header-row td {
+  position: sticky;
+  left: 0;
+}
+.group-title-input {
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: border 0.3s;
+  width: 250px;
+}
+.group-title-input:hover, .group-title-input:focus {
+  border: 1px solid var(--border-color);
+  background: var(--bg-hover);
+  outline: none;
+}
+.board-header { margin-bottom: 12px; }
+table { border-collapse: separate; border-spacing: 0; }
+td, th { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+td:last-child, th:last-child { border-right: none; }
+
