@@ -4,13 +4,13 @@ import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/f
 // === 1. CONFIGURACIÓN DE FIREBASE === 
 // (Deberás rellenar esto una vez crees tu proyecto gratis en console.firebase.google.com)
 const firebaseConfig = {
-  apiKey: "AIzaSyBvaUmun5n5_ZpT3VkwsCeRWQ9Eas6UAFc",
-  authDomain: "tablero-comunicaciones-vtd.firebaseapp.com",
-  projectId: "tablero-comunicaciones-vtd",
-  storageBucket: "tablero-comunicaciones-vtd.firebasestorage.app",
-  messagingSenderId: "783962170954",
-  appId: "1:783962170954:web:421623cb0f02f0bfb368b3",
-  measurementId: "G-HD0VGPF494"
+    apiKey: "AIzaSyBvaUmun5n5_ZpT3VkwsCeRWQ9Eas6UAFc",
+    authDomain: "tablero-comunicaciones-vtd.firebaseapp.com",
+    projectId: "tablero-comunicaciones-vtd",
+    storageBucket: "tablero-comunicaciones-vtd.firebasestorage.app",
+    messagingSenderId: "783962170954",
+    appId: "1:783962170954:web:421623cb0f02f0bfb368b3",
+    measurementId: "G-HD0VGPF494"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -53,6 +53,7 @@ const OPTIONS = {
 };
 
 let tableData = [];
+let groupsData = [];
 let allProfiles = {};
 let currentUserRole = null; // 'admin', 'editor', 'viewer'
 let currentUserEmail = '';
@@ -86,8 +87,10 @@ document.getElementById('loginBtn').addEventListener('click', () => {
         unsubDatos = onSnapshot(doc(db, "tablero", "datos"), (docSnap) => {
             if (docSnap.exists()) {
                 tableData = docSnap.data().rows || [];
+                groupsData = docSnap.data().groups || [];
             } else {
                 tableData = [];
+                groupsData = [];
             }
             initTable();
         });
@@ -118,7 +121,7 @@ function initTable() {
 async function saveData() {
     if (currentUserRole !== 'viewer') {
         try {
-            await setDoc(doc(db, "tablero", "datos"), { rows: tableData });
+            await setDoc(doc(db, "tablero", "datos"), { rows: tableData, groups: groupsData });
         } catch (e) {
             console.error("Error guardando datos:", e);
         }
@@ -138,71 +141,200 @@ function getOptionsHTML(optionsArray, selectedValue) {
     return html;
 }
 
-function renderRows() {
-    const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = '';
+function openTaskCard(tareaId) {
+    const panel = document.getElementById('task-panel');
+    const content = document.getElementById('panel-content');
 
-    tableData.forEach((row, index) => {
-        const tr = document.createElement('tr');
+    // Buscamos la tarea en nuestro arreglo local de datos
+    const tarea = todasLasTareas.find(t => t.id === tareaId);
 
-        // Disable inputs if viewer
-        const disabled = currentUserRole === 'viewer' ? 'disabled' : '';
-
-        // 0. ID (Number of request)
-        let idTD = `<td style="text-align:center; font-weight: 500; color: var(--text-muted);">${row.id}</td>`;
-        // 1. Frente
-        let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
-        // 2. Iniciativas
-        let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
-
-        // 3. Responsable (Standard Select)
-        let respTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'responsable', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.responsables, row.responsable)}</select></td>`;
-
-        // 4. Estado
-        let bgColorClass = 'status-placeholder';
-        if (row.estado === 'En proceso') bgColorClass = 'status-En-proceso';
-        else if (row.estado === 'En aprobación') bgColorClass = 'status-En-aprobacion';
-        else if (row.estado === 'Entregado') bgColorClass = 'status-Entregado';
-
-        let estadoTD = `<td style="position:relative">
-            <select class="cell-select" style="position:relative; z-index:2; opacity:0; appearance:auto; height:100%; width:100%" onchange="updateCell(${index}, 'estado', this.value)" ${disabled}>
-                ${getOptionsHTML(OPTIONS.estado, row.estado)}
-            </select>
-            <div class="status-label ${bgColorClass}">
-                ${row.estado || ''}
+    if (tarea) {
+        content.innerHTML = `
+            <div class="card-field">
+                <label>Responsable</label>
+                <p>${tarea.responsable}</p>
             </div>
-        </td>`;
+            <div class="card-field">
+                <label>Descripción detallada</label>
+                <textarea class="edit-area">${tarea.descripcion || 'Sin descripción...'}</textarea>
+            </div>
+            <div class="card-field">
+                <label>Última actualización</label>
+                <small>${tarea.fechaEdicion || 'N/A'}</small>
+            </div>
+        `;
+        panel.classList.add('open');
+    }
+}
 
-        // 5. Formatos (Handles 'Otro')
-        let formatTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'formato', this)" ${disabled}>${getOptionsHTML(OPTIONS.formatos, row.formato)}</select></td>`;
+function getRandomColor() {
+    const colors = ['#fdab3d', '#00c875', '#579bfc', '#a25ddc', '#e2445c', '#0086c0', '#cab641', '#ff7575'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
 
-        // 6. Descripción
-        let textTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'descripcion', this.value)" ${disabled}>${row.descripcion || ''}</textarea></td>`;
+window.addGroup = function () {
+    if (currentUserRole === 'viewer') return;
+    const newId = 'g_' + Date.now();
+    groupsData.push({ id: newId, name: 'Nuevo grupo', color: getRandomColor() });
+    saveData();
+    renderRows();
+}
 
-        // 7. Fecha de entrega (Format Colombia native date picker)
-        let fechaEntregaTD = `<td><input type="date" class="cell-input" value="${row.fechaEntrega || ''}" onchange="updateCell(${index}, 'fechaEntrega', this.value)" ${disabled}></td>`;
+window.updateGroupName = function (groupId, newName) {
+    if (currentUserRole === 'viewer') return;
+    const group = groupsData.find(g => g.id === groupId);
+    if (group) {
+        group.name = newName;
+        saveData();
+    }
+}
 
-        // 8. Horas
-        let horasTD = `<td><input type="number" class="cell-input" min="0" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)" ${disabled}></td>`;
+window.deleteGroup = function (groupId) {
+    if (currentUserRole === 'viewer') return;
+    if (confirm('¿Seguro que deseas eliminar este grupo? Las tareas se moverán al grupo de arriba.')) {
+        if (groupsData.length <= 1) return alert('No puedes eliminar el último grupo.');
+        const groupIndex = groupsData.findIndex(g => g.id === groupId);
+        const fallbackGroupId = groupIndex > 0 ? groupsData[groupIndex - 1].id : groupsData[groupIndex + 1].id;
 
-        // 9. Fecha de publicacion
-        let fechaPubTD = `<td><input type="date" class="cell-input" value="${row.fechaPub || ''}" onchange="updateCell(${index}, 'fechaPub', this.value)" ${disabled}></td>`;
+        tableData.forEach(r => {
+            if (r.groupId === groupId) r.groupId = fallbackGroupId;
+        });
 
-        // 10. Canal
-        let canalTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'canal', this)" ${disabled}>${getOptionsHTML(OPTIONS.canal, row.canal)}</select></td>`;
+        groupsData.splice(groupIndex, 1);
+        saveData();
+        renderRows();
+    }
+}
 
-        // 11. Impresiones
-        let impTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'impresiones', this.value)" ${disabled}>${row.impresiones || ''}</textarea></td>`;
+function renderRows() {
+    const table = document.getElementById('mainTable');
 
-        // 12. Observaciones
-        let obsTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'observaciones', this.value)" ${disabled}>${row.observaciones || ''}</textarea></td>`;
+    // Cleanup old tbodys and keep original header
+    const oldBodies = table.querySelectorAll('tbody');
+    oldBodies.forEach(b => b.remove());
 
-        // Delete toggle
-        let delTD = currentUserRole !== 'viewer' ? `<td style="text-align:center"><button onclick="deleteRow(${index})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer">✖</button></td>` : `<td></td>`;
+    if (!groupsData || groupsData.length === 0) {
+        groupsData = [{ id: 'g_default', name: 'Este mes', color: '#579bfc' }];
+    }
 
-        tr.innerHTML = idTD + frenteTD + initTD + respTD + estadoTD + formatTD + textTD + fechaEntregaTD + horasTD + fechaPubTD + canalTD + impTD + obsTD + delTD;
-        tbody.appendChild(tr);
+    groupsData.forEach((group) => {
+        const headerBody = document.createElement('tbody');
+        headerBody.dataset.groupId = group.id;
+
+        const headerTr = document.createElement('tr');
+        headerTr.className = 'group-header-row';
+        headerTr.innerHTML = `
+            <td colspan="16" style="border: none; padding: 24px 0 8px 0; background: var(--bg-card); z-index: 5;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-left: 8px;">
+                    <div class="group-color-indicator" style="color: ${group.color}; cursor:pointer; display:flex; align-items:center;" onclick="toggleGroup('${group.id}')">
+                        <span class="material-symbols-outlined" id="icon_${group.id}">expand_more</span>
+                    </div>
+                    <input type="text" class="group-title-input" value="${group.name}" style="color: ${group.color};" onblur="updateGroupName('${group.id}', this.value)" ${currentUserRole === 'viewer' ? 'disabled' : ''}>
+                    <span style="color: var(--text-muted); font-size: 13px;">${tableData.filter(r => r.groupId === group.id).length} tareas</span>
+                    ${currentUserRole !== 'viewer' ? `<button onclick="deleteGroup('${group.id}')" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; margin-left:10px; display:flex; align-items:center;"><span class="material-symbols-outlined" style="font-size:18px;">delete</span></button>` : ''}
+                </div>
+            </td>
+        `;
+        headerBody.appendChild(headerTr);
+        table.appendChild(headerBody);
+
+        const groupRows = tableData.filter(r => r.groupId === group.id || (!r.groupId && group.id === groupsData[0].id));
+
+        const rowsContainer = document.createElement('tbody');
+        rowsContainer.id = `group_rows_${group.id}`;
+        rowsContainer.dataset.groupId = group.id;
+        rowsContainer.className = 'sortable-list';
+
+        groupRows.forEach((row) => {
+            const index = tableData.findIndex(r => r.id === row.id);
+            const tr = document.createElement('tr');
+            tr.dataset.index = index;
+            const disabled = currentUserRole === 'viewer' ? 'disabled' : '';
+
+            let dragTD = `<td style="border-left: 6px solid ${group.color}; text-align:center; cursor:grab; color:var(--text-muted); width: 40px; border-bottom: 2px solid var(--bg-card);" class="drag-handle"><span class="material-symbols-outlined" style="font-size:18px; position:relative; top:2px;">drag_indicator</span></td>`;
+            let idTD = `<td style="text-align:center; font-weight: 500; font-size: 13px; color: var(--text-muted);">${row.id}</td>`;
+            let fechaSolTD = `<td><input type="date" class="cell-input" value="${row.fechaSolicitud || ''}" onchange="updateCell(${index}, 'fechaSolicitud', this.value)" ${disabled}></td>`;
+            let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
+            let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
+            let respTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'responsable', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.responsables, row.responsable)}</select></td>`;
+
+            let bgColorClass = 'status-placeholder';
+            if (row.estado === 'En proceso') bgColorClass = 'status-En-proceso';
+            else if (row.estado === 'En aprobación') bgColorClass = 'status-En-aprobacion';
+            else if (row.estado === 'Entregado') bgColorClass = 'status-Entregado';
+
+            let estadoTD = `<td style="position:relative">
+                <select class="cell-select" style="position:relative; z-index:2; opacity:0; appearance:auto; height:100%; width:100%" onchange="updateCell(${index}, 'estado', this.value)" ${disabled}>
+                    ${getOptionsHTML(OPTIONS.estado, row.estado)}
+                </select>
+                <div class="status-label ${bgColorClass}">${row.estado || ''}</div>
+            </td>`;
+
+            let formatTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'formato', this)" ${disabled}>${getOptionsHTML(OPTIONS.formatos, row.formato)}</select></td>`;
+            let textTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'descripcion', this.value)" ${disabled}>${row.descripcion || ''}</textarea></td>`;
+            let fechaEntregaTD = `<td><input type="date" class="cell-input" value="${row.fechaEntrega || ''}" onchange="updateCell(${index}, 'fechaEntrega', this.value)" ${disabled}></td>`;
+            let horasTD = `<td><input type="number" class="cell-input" min="0" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)" ${disabled}></td>`;
+            let fechaPubTD = `<td><input type="date" class="cell-input" value="${row.fechaPub || ''}" onchange="updateCell(${index}, 'fechaPub', this.value)" ${disabled}></td>`;
+            let canalTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'canal', this)" ${disabled}>${getOptionsHTML(OPTIONS.canal, row.canal)}</select></td>`;
+            let impTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'impresiones', this.value)" ${disabled}>${row.impresiones || ''}</textarea></td>`;
+            let obsTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'observaciones', this.value)" ${disabled}>${row.observaciones || ''}</textarea></td>`;
+            let delTD = currentUserRole !== 'viewer' ? `<td style="text-align:center"><button onclick="deleteRow(${index})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; justify-content:center; width:100%;"><span class="material-symbols-outlined" style="font-size:20px;">close</span></button></td>` : `<td></td>`;
+
+            tr.innerHTML = dragTD + idTD + fechaSolTD + frenteTD + initTD + respTD + estadoTD + formatTD + textTD + fechaEntregaTD + horasTD + fechaPubTD + canalTD + impTD + obsTD + delTD;
+            rowsContainer.appendChild(tr);
+        });
+
+        if (currentUserRole !== 'viewer') {
+            const addRowTr = document.createElement('tr');
+            addRowTr.innerHTML = `
+                <td colspan="16" style="border:none; border-left: 6px solid ${group.color};">
+                    <div class="add-row-btn" style="padding-left: 10px;" onclick="addRow('${group.id}')">
+                        + Agregar a este grupo
+                    </div>
+                </td>
+            `;
+            rowsContainer.appendChild(addRowTr);
+        }
+
+        table.appendChild(rowsContainer);
     });
+
+    if (currentUserRole !== 'viewer' && typeof Sortable !== 'undefined') {
+        document.querySelectorAll('.sortable-list').forEach(el => {
+            Sortable.create(el, {
+                group: 'shared',
+                animation: 150,
+                handle: '.drag-handle',
+                filter: '.add-row-btn',
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const oldIndexStr = itemEl.dataset.index;
+                    if (!oldIndexStr) return;
+
+                    const movedItem = tableData[oldIndexStr];
+                    const newGroupId = evt.to.dataset.groupId;
+
+                    if (movedItem.groupId !== newGroupId) {
+                        movedItem.groupId = newGroupId;
+                        saveData();
+                        renderRows();
+                    }
+                },
+            });
+        });
+    }
+}
+
+window.toggleGroup = function (groupId) {
+    const rows = document.getElementById('group_rows_' + groupId);
+    const icon = document.getElementById('icon_' + groupId);
+    if (rows.style.display === 'none') {
+        rows.style.display = '';
+        icon.innerText = 'expand_more';
+    } else {
+        rows.style.display = 'none';
+        icon.innerText = 'chevron_right';
+    }
 }
 
 // Handle Custom "Otro" value
@@ -244,15 +376,19 @@ window.deleteRow = function (index) {
     }
 }
 
-window.addRow = function () {
+window.addRow = function (groupId) {
     if (currentUserRole !== 'viewer') {
         let nextId = 1;
         if (tableData.length > 0) {
             const ids = tableData.map(r => r.id || 0);
             nextId = Math.max(...ids) + 1;
         }
+        if (!groupId && groupsData.length > 0) groupId = groupsData[0].id;
+
         tableData.push({
             id: nextId,
+            groupId: groupId,
+            fechaSolicitud: '',
             frente: '', iniciativa: '', responsable: '', estado: '', formato: '',
             descripcion: '', fechaEntrega: '', horas: '', fechaPub: '', canal: '',
             impresiones: '', observaciones: ''
@@ -263,8 +399,9 @@ window.addRow = function () {
     }
 }
 
-document.getElementById('addBtn').addEventListener('click', addRow);
-document.getElementById('addRowInlineBtn').addEventListener('click', addRow);
+document.getElementById('addBtn').addEventListener('click', () => addRow(null));
+const btnGrp = document.getElementById('addGroupBtn');
+if (btnGrp) btnGrp.addEventListener('click', () => addGroup());
 
 // --- AUTOMATION SIMULATION ---
 function checkAutomations() {
