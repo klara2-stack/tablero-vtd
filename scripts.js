@@ -54,6 +54,7 @@ const OPTIONS = {
 
 let tableData = [];
 let groupsData = [];
+let activeGroupId = null;
 let allProfiles = {};
 let currentUserRole = null; // 'admin', 'editor', 'viewer'
 let currentUserEmail = '';
@@ -206,6 +207,12 @@ window.deleteGroup = function (groupId) {
     }
 }
 
+function getAvatarHTML(name) {
+    if (!name || name === '') return `<div class="empty-avatar"><span class="material-symbols-outlined" style="position:relative; top:2px;">person_add</span></div>`;
+    const initial = name.charAt(0).toUpperCase();
+    return `<div class="user-avatar" title="${name}">${initial}</div>`;
+}
+
 function renderRows() {
     const table = document.getElementById('mainTable');
 
@@ -217,7 +224,12 @@ function renderRows() {
         groupsData = [{ id: 'g_default', name: 'Este mes', color: '#579bfc' }];
     }
 
+    if (activeGroupId === null && groupsData.length > 0) {
+        activeGroupId = groupsData[0].id;
+    }
+
     groupsData.forEach((group) => {
+        const isGroupOpen = (activeGroupId === group.id);
         const headerBody = document.createElement('tbody');
         headerBody.dataset.groupId = group.id;
 
@@ -227,11 +239,11 @@ function renderRows() {
             <td colspan="16" style="border: none; padding: 24px 0 8px 0; background: var(--bg-card); z-index: 5;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-left: 8px;">
                     <div class="group-color-indicator" style="color: ${group.color}; cursor:pointer; display:flex; align-items:center;" onclick="toggleGroup('${group.id}')">
-                        <span class="material-symbols-outlined" id="icon_${group.id}">expand_more</span>
+                        <span class="material-symbols-outlined" id="icon_${group.id}">${isGroupOpen ? 'expand_more' : 'chevron_right'}</span>
                     </div>
                     <input type="text" class="group-title-input" value="${group.name}" style="color: ${group.color};" onblur="updateGroupName('${group.id}', this.value)" ${currentUserRole === 'viewer' ? 'disabled' : ''}>
                     <span style="color: var(--text-muted); font-size: 13px;">${tableData.filter(r => r.groupId === group.id).length} tareas</span>
-                    ${currentUserRole !== 'viewer' ? `<button onclick="deleteGroup('${group.id}')" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; margin-left:10px; display:flex; align-items:center;"><span class="material-symbols-outlined" style="font-size:18px;">delete</span></button>` : ''}
+                    ${currentUserRole !== 'viewer' ? `<button onclick="deleteGroup('${group.id}')" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; margin-left:10px; display:flex; align-items:center;" title="Eliminar grupo"><span class="material-symbols-outlined" style="font-size:20px;">delete_outline</span></button>` : ''}
                 </div>
             </td>
         `;
@@ -244,6 +256,31 @@ function renderRows() {
         rowsContainer.id = `group_rows_${group.id}`;
         rowsContainer.dataset.groupId = group.id;
         rowsContainer.className = 'sortable-list';
+        rowsContainer.style.display = isGroupOpen ? '' : 'none';
+
+        if (isGroupOpen) {
+            const colsTr = document.createElement('tr');
+            colsTr.className = 'group-columns-row';
+            colsTr.innerHTML = `
+                <th style="width: 40px;"></th>
+                <th style="min-width: 100px;">Número de solicitud</th>
+                <th style="min-width: 160px;">Fecha de solicitud</th>
+                <th style="min-width: 150px;">Frente de trabajo</th>
+                <th style="min-width: 280px;">Iniciativas</th>
+                <th style="min-width: 200px;">Responsable</th>
+                <th style="min-width: 160px;">Estado</th>
+                <th style="min-width: 150px;">Formatos</th>
+                <th style="min-width: 300px;">Descripción</th>
+                <th style="min-width: 160px;">Fecha de entrega</th>
+                <th style="min-width: 150px;">Horas dedicación</th>
+                <th style="min-width: 180px;">Fecha publicación</th>
+                <th style="min-width: 150px;">Canal</th>
+                <th style="min-width: 250px;">Impresiones</th>
+                <th style="min-width: 250px;">Observaciones</th>
+                <th style="width: 40px;"></th>
+            `;
+            rowsContainer.appendChild(colsTr);
+        }
 
         groupRows.forEach((row) => {
             const index = tableData.findIndex(r => r.id === row.id);
@@ -256,7 +293,14 @@ function renderRows() {
             let fechaSolTD = `<td><input type="date" class="cell-input" value="${row.fechaSolicitud || ''}" onchange="updateCell(${index}, 'fechaSolicitud', this.value)" ${disabled}></td>`;
             let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
             let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
-            let respTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'responsable', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.responsables, row.responsable)}</select></td>`;
+            let respTD = `<td style="position:relative; text-align:center;">
+                <select class="cell-select" style="position:absolute; top:0; left:0; z-index:2; opacity:0; height:100%; width:100%; cursor:pointer;" onchange="updateCell(${index}, 'responsable', this.value)" ${disabled}>
+                    ${getOptionsHTML(OPTIONS.responsables, row.responsable)}
+                </select>
+                <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
+                    ${getAvatarHTML(row.responsable)}
+                </div>
+            </td>`;
 
             let bgColorClass = 'status-placeholder';
             if (row.estado === 'En proceso') bgColorClass = 'status-En-proceso';
@@ -326,15 +370,12 @@ function renderRows() {
 }
 
 window.toggleGroup = function (groupId) {
-    const rows = document.getElementById('group_rows_' + groupId);
-    const icon = document.getElementById('icon_' + groupId);
-    if (rows.style.display === 'none') {
-        rows.style.display = '';
-        icon.innerText = 'expand_more';
+    if (activeGroupId === groupId) {
+        activeGroupId = null; // Close it if it's already open
     } else {
-        rows.style.display = 'none';
-        icon.innerText = 'chevron_right';
+        activeGroupId = groupId;
     }
+    renderRows();
 }
 
 // Handle Custom "Otro" value
@@ -384,6 +425,7 @@ window.addRow = function (groupId) {
             nextId = Math.max(...ids) + 1;
         }
         if (!groupId && groupsData.length > 0) groupId = groupsData[0].id;
+        activeGroupId = groupId; // Abre el grupo donde ubicamos la tarea
 
         tableData.push({
             id: nextId,
