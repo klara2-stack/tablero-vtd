@@ -748,6 +748,7 @@ tr.row-selected td.checkbox-cell {
   background: var(--bg-main);
   border-radius: 8px;
 }
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -762,10 +763,12 @@ tr.row-selected td.checkbox-cell {
   direction: ltr;
   -webkit-font-smoothing: antialiased;
 }
+
 .group-header-row td {
   position: sticky;
   left: 0;
 }
+
 .group-title-input {
   background: transparent;
   border: 1px solid transparent;
@@ -777,13 +780,76 @@ tr.row-selected td.checkbox-cell {
   transition: border 0.3s;
   width: 250px;
 }
-.group-title-input:hover, .group-title-input:focus {
+
+.group-title-input:hover,
+.group-title-input:focus {
   border: 1px solid var(--border-color);
   background: var(--bg-hover);
   outline: none;
 }
-.board-header { margin-bottom: 12px; }
-table { border-collapse: separate; border-spacing: 0; }
-td, th { border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-td:last-child, th:last-child { border-right: none; }
 
+.board-header {
+  margin-bottom: 12px;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+td,
+th {
+  border-bottom: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+}
+
+td:last-child,
+th:last-child {
+  border-right: none;
+}
+
+/* User Avatars */
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 13px;
+  margin: 0 auto;
+}
+
+.empty-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px dashed var(--text-muted);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.empty-avatar .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* Accordion group column headers */
+.group-columns-row th {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-card);
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+  z-index: 10;
+}
