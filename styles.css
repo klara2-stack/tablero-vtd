@@ -853,3 +853,35 @@ th:last-child {
   white-space: nowrap;
   z-index: 10;
 }
+.group-delete-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    opacity: 0.25;
+    cursor: pointer;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.2s, color 0.2s;
+}
+.group-delete-btn:hover {
+    opacity: 0.8;
+    color: #e2445c;
+}
+.avatar-stack {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.avatar-stack .user-avatar {
+    border: 2px solid var(--bg-card);
+}
+.metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+@media (max-width: 900px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
