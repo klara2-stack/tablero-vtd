@@ -302,19 +302,16 @@ function renderRows() {
             colsTr.innerHTML = `
                 <th style="width: 40px;"></th>
                 <th style="min-width: 100px;">Número de solicitud</th>
+                <th style="width: 50px;"></th>
                 <th style="min-width: 160px;">Fecha de solicitud</th>
                 <th style="min-width: 150px;">Frente de trabajo</th>
                 <th style="min-width: 280px;">Iniciativas</th>
                 <th style="min-width: 200px;">Responsable</th>
                 <th style="min-width: 160px;">Estado</th>
                 <th style="min-width: 150px;">Formatos</th>
-                <th style="min-width: 300px;">Descripción</th>
                 <th style="min-width: 160px;">Fecha de entrega</th>
-                <th style="min-width: 150px;">Horas dedicación</th>
                 <th style="min-width: 180px;">Fecha publicación</th>
                 <th style="min-width: 150px;">Canal</th>
-                <th style="min-width: 250px;">Impresiones</th>
-                <th style="min-width: 250px;">Observaciones</th>
                 <th style="width: 40px;"></th>
             `;
             rowsContainer.appendChild(colsTr);
@@ -328,6 +325,8 @@ function renderRows() {
 
             let dragTD = `<td style="border-left: 6px solid ${group.color}; text-align:center; cursor:grab; color:var(--text-muted); width: 40px; border-bottom: 2px solid var(--bg-card);" class="drag-handle"><span class="material-symbols-outlined" style="font-size:18px; position:relative; top:2px;">drag_indicator</span></td>`;
             let idTD = `<td style="text-align:center; font-weight: 500; font-size: 13px; color: var(--text-muted);">${row.id}</td>`;
+            let bubbleCount = row.comentarios && row.comentarios.length > 0 ? `<span class="update-badge">${row.comentarios.length}</span>` : '';
+            let btnPanelTD = `<td style="text-align:center;"><button onclick="openPanel(${index})" class="update-bubble-btn" title="Abrir detalles/actualizaciones"><span class="material-symbols-outlined">chat_bubble_outline</span>${bubbleCount}</button></td>`;
             let fechaSolTD = `<td><input type="date" class="cell-input" value="${row.fechaSolicitud || ''}" onchange="updateCell(${index}, 'fechaSolicitud', this.value)" ${disabled}></td>`;
             let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
             let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
@@ -350,16 +349,12 @@ function renderRows() {
             </td>`;
 
             let formatTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'formato', this)" ${disabled}>${getOptionsHTML(OPTIONS.formatos, row.formato)}</select></td>`;
-            let textTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'descripcion', this.value)" ${disabled}>${row.descripcion || ''}</textarea></td>`;
             let fechaEntregaTD = `<td><input type="date" class="cell-input" value="${row.fechaEntrega || ''}" onchange="updateCell(${index}, 'fechaEntrega', this.value)" ${disabled}></td>`;
-            let horasTD = `<td><input type="number" class="cell-input" min="0" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)" ${disabled}></td>`;
             let fechaPubTD = `<td><input type="date" class="cell-input" value="${row.fechaPub || ''}" onchange="updateCell(${index}, 'fechaPub', this.value)" ${disabled}></td>`;
             let canalTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'canal', this)" ${disabled}>${getOptionsHTML(OPTIONS.canal, row.canal)}</select></td>`;
-            let impTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'impresiones', this.value)" ${disabled}>${row.impresiones || ''}</textarea></td>`;
-            let obsTD = `<td class="textarea-cell"><textarea class="cell-textarea" onchange="updateCell(${index}, 'observaciones', this.value)" ${disabled}>${row.observaciones || ''}</textarea></td>`;
             let delTD = currentUserRole !== 'viewer' ? `<td style="text-align:center"><button onclick="deleteRow(${index})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; justify-content:center; width:100%;"><span class="material-symbols-outlined" style="font-size:20px;">close</span></button></td>` : `<td></td>`;
 
-            tr.innerHTML = dragTD + idTD + fechaSolTD + frenteTD + initTD + respTD + estadoTD + formatTD + textTD + fechaEntregaTD + horasTD + fechaPubTD + canalTD + impTD + obsTD + delTD;
+            tr.innerHTML = dragTD + idTD + btnPanelTD + fechaSolTD + frenteTD + initTD + respTD + estadoTD + formatTD + fechaEntregaTD + fechaPubTD + canalTD + delTD;
             rowsContainer.appendChild(tr);
         });
 
@@ -411,6 +406,90 @@ window.toggleGroup = function (groupId) {
         openGroups[groupId] = true;
     }
     renderRows();
+}
+
+let allExpanded = false;
+window.toggleAllGroups = function() {
+    allExpanded = !allExpanded;
+    if (allExpanded) {
+        groupsData.forEach(g => openGroups[g.id] = true);
+    } else {
+        openGroups = {};
+    }
+    renderRows();
+}
+if(document.getElementById('toggleAllBtn')) {
+    document.getElementById('toggleAllBtn').addEventListener('click', toggleAllGroups);
+}
+
+window.openPanel = function(index) {
+    if (currentUserRole === 'viewer') return;
+    document.getElementById('task-panel').classList.add('open');
+    renderPanelContent(index);
+}
+
+window.closePanel = function() {
+    document.getElementById('task-panel').classList.remove('open');
+}
+
+window.renderPanelContent = function(index) {
+    const row = tableData[index];
+    const content = document.getElementById('panel-content');
+    
+    if(!row.comentarios) row.comentarios = [];
+
+    let commentsHtml = '';
+    row.comentarios.forEach(c => {
+        commentsHtml += `<div class="comment-item">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <strong>${c.author}</strong> <span style="font-size:11px; color:var(--text-muted);">${c.date}</span>
+            </div>
+            <p>${c.text}</p>
+        </div>`;
+    });
+
+    content.innerHTML = `
+        <div class="panel-section">
+            <h3 style="margin-bottom:15px; color:white; border-bottom:1px solid var(--border-color); padding-bottom:8px;">Detalles Adicionales</h3>
+            
+            <label style="display:block; margin-top:10px; font-size:13px; color:var(--text-muted);">Descripción detallada</label>
+            <textarea class="cell-textarea" style="height:80px; width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" onchange="updateCell(${index}, 'descripcion', this.value)">${row.descripcion || ''}</textarea>
+            
+            <label style="margin-top:15px; display:block; font-size:13px; color:var(--text-muted);">Horas dedicación</label>
+            <input type="number" class="cell-input" style="width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)">
+            
+            <label style="margin-top:15px; display:block; font-size:13px; color:var(--text-muted);">Impresiones</label>
+            <textarea class="cell-textarea" style="height:60px; width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" onchange="updateCell(${index}, 'impresiones', this.value)">${row.impresiones || ''}</textarea>
+            
+            <label style="margin-top:15px; display:block; font-size:13px; color:var(--text-muted);">Observaciones</label>
+            <textarea class="cell-textarea" style="height:60px; width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" onchange="updateCell(${index}, 'observaciones', this.value)">${row.observaciones || ''}</textarea>
+        </div>
+
+        <div class="panel-section" style="margin-top:20px;">
+            <h3 style="margin-bottom:15px; color:white;">Actualizaciones</h3>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <input type="text" id="newCommentText" class="form-control" placeholder="Escribe una actualización..." style="flex:1;">
+                <button class="btn btn-primary" onclick="addComment(${index})">Publicar</button>
+            </div>
+            <div id="commentsList" style="display:flex; flex-direction:column; gap:10px;">
+                ${commentsHtml}
+            </div>
+        </div>
+    `;
+}
+
+window.addComment = function(index) {
+    const text = document.getElementById('newCommentText').value.trim();
+    if(text === '') return;
+    if(!tableData[index].comentarios) tableData[index].comentarios = [];
+    tableData[index].comentarios.unshift({
+        author: currentUserEmail ? currentUserEmail.split('@')[0] : 'Admin',
+        date: new Date().toLocaleString(),
+        text: text
+    });
+    saveData();
+    renderRows(); // Para actualizar la burbuja en la tabla
+    renderPanelContent(index); // Refrescar panel
 }
 
 // Handle Custom "Otro" value
