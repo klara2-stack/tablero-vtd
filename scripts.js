@@ -54,7 +54,7 @@ const OPTIONS = {
 
 let tableData = [];
 let groupsData = [];
-let activeGroupId = null;
+let openGroups = {};
 let allProfiles = {};
 let currentUserRole = null; // 'admin', 'editor', 'viewer'
 let currentUserEmail = '';
@@ -207,10 +207,48 @@ window.deleteGroup = function (groupId) {
     }
 }
 
-function getAvatarHTML(name) {
-    if (!name || name === '') return `<div class="empty-avatar"><span class="material-symbols-outlined" style="position:relative; top:2px;">person_add</span></div>`;
-    const initial = name.charAt(0).toUpperCase();
-    return `<div class="user-avatar" title="${name}">${initial}</div>`;
+function getAvatarHTML(nameOrArray) {
+    let names = Array.isArray(nameOrArray) ? nameOrArray : (nameOrArray ? [nameOrArray] : []);
+    if (names.length === 0) return `<div class="empty-avatar"><span class="material-symbols-outlined" style="position:relative; top:2px;">person_add</span></div>`;
+    
+    let html = '<div class="avatar-stack">';
+    names.slice(0, 3).forEach((n, i) => {
+        const initial = n.charAt(0).toUpperCase();
+        html += `<div class="user-avatar" title="${n}" style="z-index:${3-i}; margin-left:${i>0 ? '-8px' : '0'}; border:2px solid var(--bg-card);">${initial}</div>`;
+    });
+    if(names.length > 3) {
+        html += `<div class="user-avatar" style="z-index:0; margin-left:-8px; border:2px solid var(--bg-card); background:var(--bg-hover); color:var(--text-muted); font-size:11px;">+${names.length-3}</div>`;
+    }
+    html += '</div>';
+    return html;
+}
+
+let currentAssignRowIndex = null;
+window.openAssignModal = function(index) {
+    if (currentUserRole === 'viewer') return;
+    currentAssignRowIndex = index;
+    const row = tableData[index];
+    const reps = Array.isArray(row.responsable) ? row.responsable : (row.responsable ? [row.responsable] : []);
+    
+    const container = document.getElementById('assignCheckboxes');
+    container.innerHTML = '';
+    OPTIONS.responsables.forEach(resp => {
+        const checked = reps.includes(resp) ? 'checked' : '';
+        container.innerHTML += `<label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="${resp}" ${checked}> ${resp}</label>`;
+    });
+    document.getElementById('assignModal').style.display = 'flex';
+}
+window.closeAssignModal = function() {
+    document.getElementById('assignModal').style.display = 'none';
+}
+window.saveAssignModal = function() {
+    if(currentAssignRowIndex === null) return;
+    const checkboxes = document.querySelectorAll('#assignCheckboxes input:checked');
+    const selected = Array.from(checkboxes).map(cb => cb.value);
+    tableData[currentAssignRowIndex].responsable = selected;
+    saveData();
+    renderRows();
+    closeAssignModal();
 }
 
 function renderRows() {
@@ -224,12 +262,12 @@ function renderRows() {
         groupsData = [{ id: 'g_default', name: 'Este mes', color: '#579bfc' }];
     }
 
-    if (activeGroupId === null && groupsData.length > 0) {
-        activeGroupId = groupsData[0].id;
+    if (Object.keys(openGroups).length === 0 && groupsData.length > 0) {
+        openGroups[groupsData[0].id] = true;
     }
 
     groupsData.forEach((group) => {
-        const isGroupOpen = (activeGroupId === group.id);
+        const isGroupOpen = !!openGroups[group.id];
         const headerBody = document.createElement('tbody');
         headerBody.dataset.groupId = group.id;
 
@@ -243,7 +281,7 @@ function renderRows() {
                     </div>
                     <input type="text" class="group-title-input" value="${group.name}" style="color: ${group.color};" onblur="updateGroupName('${group.id}', this.value)" ${currentUserRole === 'viewer' ? 'disabled' : ''}>
                     <span style="color: var(--text-muted); font-size: 13px;">${tableData.filter(r => r.groupId === group.id).length} tareas</span>
-                    ${currentUserRole !== 'viewer' ? `<button onclick="deleteGroup('${group.id}')" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; margin-left:10px; display:flex; align-items:center;" title="Eliminar grupo"><span class="material-symbols-outlined" style="font-size:20px;">delete_outline</span></button>` : ''}
+                    ${currentUserRole !== 'viewer' ? `<button class="group-delete-btn" onclick="deleteGroup('${group.id}')" title="Eliminar grupo"><span class="material-symbols-outlined" style="font-size:20px;">delete_outline</span></button>` : ''}
                 </div>
             </td>
         `;
@@ -293,10 +331,7 @@ function renderRows() {
             let fechaSolTD = `<td><input type="date" class="cell-input" value="${row.fechaSolicitud || ''}" onchange="updateCell(${index}, 'fechaSolicitud', this.value)" ${disabled}></td>`;
             let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
             let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
-            let respTD = `<td style="position:relative; text-align:center;">
-                <select class="cell-select" style="position:absolute; top:0; left:0; z-index:2; opacity:0; height:100%; width:100%; cursor:pointer;" onchange="updateCell(${index}, 'responsable', this.value)" ${disabled}>
-                    ${getOptionsHTML(OPTIONS.responsables, row.responsable)}
-                </select>
+            let respTD = `<td style="text-align:center; cursor:${disabled ? 'default' : 'pointer'};" onclick="${disabled ? '' : `openAssignModal(${index})`}">
                 <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
                     ${getAvatarHTML(row.responsable)}
                 </div>
@@ -370,10 +405,10 @@ function renderRows() {
 }
 
 window.toggleGroup = function (groupId) {
-    if (activeGroupId === groupId) {
-        activeGroupId = null; // Close it if it's already open
+    if (openGroups[groupId]) {
+        delete openGroups[groupId];
     } else {
-        activeGroupId = groupId;
+        openGroups[groupId] = true;
     }
     renderRows();
 }
@@ -425,7 +460,7 @@ window.addRow = function (groupId) {
             nextId = Math.max(...ids) + 1;
         }
         if (!groupId && groupsData.length > 0) groupId = groupsData[0].id;
-        activeGroupId = groupId; // Abre el grupo donde ubicamos la tarea
+        openGroups[groupId] = true; // Abre el grupo donde ubicamos la tarea
 
         tableData.push({
             id: nextId,
@@ -564,8 +599,7 @@ document.getElementById('saveProfileBtn').addEventListener('click', () => {
     document.getElementById('profileOverlay').style.display = 'none';
 });
 
-// --- METRICS & NAVIGATION LOGIC ---
-let chartFrente, chartEstado;
+let chartFrente, chartEstado, chartGrupo, chartResponsable, chartIniciativa;
 
 function updateMetrics() {
     const total = tableData.length;
@@ -590,22 +624,9 @@ function updateMetrics() {
             type: 'bar',
             data: {
                 labels: Object.keys(frenteCounts),
-                datasets: [{
-                    label: 'Solicitudes',
-                    data: Object.values(frenteCounts),
-                    backgroundColor: '#4e5deb',
-                    borderRadius: 4
-                }]
+                datasets: [{ data: Object.values(frenteCounts), backgroundColor: '#4e5deb', borderRadius: 4 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { stepSize: 1, color: '#9ba0bc' } },
-                    x: { ticks: { color: '#9ba0bc' } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
     }
 
@@ -623,18 +644,80 @@ function updateMetrics() {
             type: 'doughnut',
             data: {
                 labels: Object.keys(estadoCounts),
-                datasets: [{
-                    data: Object.values(estadoCounts),
-                    backgroundColor: ['#fdab3d', '#579bfc', '#00c875'],
-                    borderWidth: 0
-                }]
+                datasets: [{ data: Object.values(estadoCounts), backgroundColor: ['#fdab3d', '#579bfc', '#00c875'], borderWidth: 0 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#9ba0bc' } }
-                }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9ba0bc' } } } }
+        });
+    }
+
+    // Grupo Chart Data
+    const grupoCounts = {};
+    groupsData.forEach(g => grupoCounts[g.name] = 0);
+    tableData.forEach(r => {
+        const gp = groupsData.find(g => g.id === r.groupId);
+        if(gp) grupoCounts[gp.name]++;
+    });
+
+    if (chartGrupo) chartGrupo.destroy();
+    const ctxGrupo = document.getElementById('grupoChart');
+    if (ctxGrupo) {
+        chartGrupo = new Chart(ctxGrupo.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(grupoCounts),
+                datasets: [{ data: Object.values(grupoCounts), backgroundColor: '#a25ddc', borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // Responsable Chart Data
+    const respCounts = {};
+    OPTIONS.responsables.forEach(r => respCounts[r] = 0);
+    tableData.forEach(r => {
+        const reps = Array.isArray(r.responsable) ? r.responsable : (r.responsable ? [r.responsable] : []);
+        reps.forEach(rep => { if (respCounts[rep] !== undefined) respCounts[rep]++; });
+    });
+
+    if (chartResponsable) chartResponsable.destroy();
+    const ctxResp = document.getElementById('responsableChart');
+    if (ctxResp) {
+        chartResponsable = new Chart(ctxResp.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(respCounts),
+                datasets: [{ data: Object.values(respCounts), backgroundColor: '#00c875', borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // Iniciativa Chart Data
+    const initCounts = {};
+    tableData.forEach(r => {
+        if(r.iniciativa && r.iniciativa.trim() !== '') {
+            initCounts[r.iniciativa] = (initCounts[r.iniciativa] || 0) + 1;
+        }
+    });
+    
+    // Sort iniciativas por cantidad para mejor visualización
+    const sortedInitKeys = Object.keys(initCounts).sort((a,b) => initCounts[b] - initCounts[a]);
+    const sortedInitVals = sortedInitKeys.map(k => initCounts[k]);
+
+    if (chartIniciativa) chartIniciativa.destroy();
+    const ctxInit = document.getElementById('iniciativaChart');
+    if (ctxInit) {
+        chartIniciativa = new Chart(ctxInit.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: sortedInitKeys.map(k => k.substring(0, 30) + (k.length > 30 ? '...' : '')),
+                datasets: [{ data: sortedInitVals, backgroundColor: '#e2445c', borderRadius: 4 }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                indexAxis: 'y',
+                plugins: { legend: { display: false } } 
             }
         });
     }
