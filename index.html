@@ -119,18 +119,38 @@
         <div id="viewsContainer" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
             <!-- Board View -->
             <div class="board-container" id="boardView">
-                <div class="board-header">
-                    <h1 class="board-title">Flujo de trabajo central</h1>
-                    <div class="actions" style="display:flex; gap:8px;">
-                        <button class="btn" id="toggleAllBtn"
-                            style="background:transparent; color:var(--text-muted); border:1px solid var(--border-color); display:flex; align-items:center; padding: 0 8px;"
-                            title="Expandir/Contraer Todo">
-                            <span class="material-symbols-outlined" style="font-size:18px;">unfold_more</span>
-                        </button>
+                <div class="board-header"
+                    style="flex-direction:row; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
+                    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                        <button class="btn btn-primary" id="addBtn"
+                            style="border-radius:24px; padding:6px 16px; display:flex; align-items:center;">Nuevo item
+                            <span class="material-symbols-outlined"
+                                style="font-size:16px; margin-left:4px;">expand_more</span></button>
+
+                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; transition:color 0.2s;"
+                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
+                            <span class="material-symbols-outlined" style="font-size:20px;">search</span>
+                            <span style="font-size:14px;">Buscar</span>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; transition:color 0.2s;"
+                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
+                            <span class="material-symbols-outlined" style="font-size:20px;">person_outline</span>
+                            <span style="font-size:14px;">Persona</span>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; transition:color 0.2s;"
+                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
+                            <span class="material-symbols-outlined" style="font-size:20px;">filter_list</span>
+                            <span style="font-size:14px;">Filtrar</span>
+                            <span class="material-symbols-outlined" style="font-size:16px;">expand_more</span>
+                        </div>
+                    </div>
+
+                    <div class="actions" style="margin-left:auto;">
                         <button class="btn" id="addGroupBtn"
                             style="background:var(--bg-hover); color:white; border:1px solid var(--border-color);">Nuevo
                             Grupo</button>
-                        <button class="btn btn-primary" id="addBtn">Agregar Tarea</button>
                     </div>
                 </div>
 
