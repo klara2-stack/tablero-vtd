@@ -19,6 +19,7 @@ const db = getFirestore(app);
 // --- DATA SCHEMA & OPTIONS ---
 const OPTIONS = {
     frenteTrabajo: ['Tu+', 'VTD', 'GC'],
+    prioridad: ['Alta', 'Media', 'Baja'],
     iniciativas: [
         'i1 Puesta en marcha de maestrías no presenciales',
         'i2 Ecosistema de analítica institucional',
@@ -310,6 +311,7 @@ function renderRows() {
                 <th style="min-width: 160px;">Estado</th>
                 <th style="min-width: 150px;">Formatos</th>
                 <th style="min-width: 160px;">Fecha de entrega</th>
+                <th style="min-width: 160px;">Prioridad</th>
                 <th style="min-width: 180px;">Fecha publicación</th>
                 <th style="min-width: 150px;">Canal</th>
                 <th style="width: 40px;"></th>
@@ -350,11 +352,24 @@ function renderRows() {
 
             let formatTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'formato', this)" ${disabled}>${getOptionsHTML(OPTIONS.formatos, row.formato)}</select></td>`;
             let fechaEntregaTD = `<td><input type="date" class="cell-input" value="${row.fechaEntrega || ''}" onchange="updateCell(${index}, 'fechaEntrega', this.value)" ${disabled}></td>`;
+            
+            let bgPrioClass = 'status-placeholder';
+            if (row.prioridad === 'Alta') bgPrioClass = 'status-Alta';
+            else if (row.prioridad === 'Media') bgPrioClass = 'status-Media';
+            else if (row.prioridad === 'Baja') bgPrioClass = 'status-Baja';
+            
+            let prioridadTD = `<td style="position:relative">
+                <select class="cell-select" style="position:relative; z-index:2; opacity:0; appearance:auto; height:100%; width:100%" onchange="updateCell(${index}, 'prioridad', this.value)" ${disabled}>
+                    ${getOptionsHTML([''].concat(OPTIONS.prioridad), row.prioridad)}
+                </select>
+                <div class="status-label ${bgPrioClass}">${row.prioridad || ''}</div>
+            </td>`;
+
             let fechaPubTD = `<td><input type="date" class="cell-input" value="${row.fechaPub || ''}" onchange="updateCell(${index}, 'fechaPub', this.value)" ${disabled}></td>`;
             let canalTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'canal', this)" ${disabled}>${getOptionsHTML(OPTIONS.canal, row.canal)}</select></td>`;
             let delTD = currentUserRole !== 'viewer' ? `<td style="text-align:center"><button onclick="deleteRow(${index})" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; display:flex; justify-content:center; width:100%;"><span class="material-symbols-outlined" style="font-size:20px;">close</span></button></td>` : `<td></td>`;
 
-            tr.innerHTML = dragTD + idTD + btnPanelTD + fechaSolTD + frenteTD + initTD + respTD + estadoTD + formatTD + fechaEntregaTD + fechaPubTD + canalTD + delTD;
+            tr.innerHTML = dragTD + idTD + btnPanelTD + fechaSolTD + frenteTD + initTD + respTD + estadoTD + formatTD + fechaEntregaTD + prioridadTD + fechaPubTD + canalTD + delTD;
             rowsContainer.appendChild(tr);
         });
 
@@ -607,7 +622,7 @@ window.updateCell = function (index, key, value) {
     tableData[index][key] = value;
     saveData();
     // Re-render specifically for Estado to update color, but for performance usually we just update DOM.
-    if (key === 'estado' || key === 'formato' || key === 'canal') {
+    if (key === 'estado' || key === 'formato' || key === 'canal' || key === 'prioridad') {
         renderRows();
     }
     if (document.getElementById('metricsView').style.display === 'block') {
