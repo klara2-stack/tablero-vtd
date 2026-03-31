@@ -1243,3 +1243,12 @@ th:last-child {
   border-color: #0073ea;
   outline: none;
 }
+.side-panel {
+    right: 0 !important;
+    transform: translateX(110%);
+    transition: transform 0.3s cubic-bezier(0, 0, 0.2, 1) !important;
+}
+.side-panel.open {
+    transform: translateX(0) !important;
+}
+
