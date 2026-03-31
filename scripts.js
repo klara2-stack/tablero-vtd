@@ -326,7 +326,7 @@ function renderRows() {
             let dragTD = `<td style="border-left: 6px solid ${group.color}; text-align:center; cursor:grab; color:var(--text-muted); width: 40px; border-bottom: 2px solid var(--bg-card);" class="drag-handle"><span class="material-symbols-outlined" style="font-size:18px; position:relative; top:2px;">drag_indicator</span></td>`;
             let idTD = `<td style="text-align:center; font-weight: 500; font-size: 13px; color: var(--text-muted);">${row.id}</td>`;
             let bubbleCount = row.comentarios && row.comentarios.length > 0 ? `<span class="update-badge">${row.comentarios.length}</span>` : '';
-            let btnPanelTD = `<td style="text-align:center;"><button onclick="openPanel(${index})" class="update-bubble-btn" title="Abrir detalles/actualizaciones"><span class="material-symbols-outlined">chat_bubble_outline</span>${bubbleCount}</button></td>`;
+            let btnPanelTD = `<td style="text-align:center;"><button onclick="openPanel(${index})" class="update-bubble-btn" title="Abrir detalles/comentarios"><span class="material-symbols-outlined">add_comment</span>${bubbleCount}</button></td>`;
             let fechaSolTD = `<td><input type="date" class="cell-input" value="${row.fechaSolicitud || ''}" onchange="updateCell(${index}, 'fechaSolicitud', this.value)" ${disabled}></td>`;
             let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
             let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
@@ -466,9 +466,22 @@ window.renderPanelContent = function(index) {
         </div>
 
         <div class="panel-section" style="margin-top:20px;">
-            <h3 style="margin-bottom:15px; color:white;">Actualizaciones</h3>
+            <h3 style="margin-bottom:15px; color:white;">Comentarios</h3>
+            
+            <div style="margin-bottom:15px;">
+                <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:5px;">Archivos adjuntos</label>
+                <div style="border:1px dashed var(--border-color); padding:15px; text-align:center; border-radius:4px; cursor:pointer;" onclick="document.getElementById('fileInput_${index}').click()">
+                    <span class="material-symbols-outlined" style="color:var(--text-muted); font-size:24px;">upload_file</span>
+                    <div style="font-size:12px; color:var(--text-muted);">Sube tus documentos o imágenes aquí</div>
+                    <input type="file" id="fileInput_${index}" style="display:none;" multiple onchange="handleFileUpload(event, ${index})">
+                </div>
+                <div id="fileList_${index}" style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
+                    ${(row.archivos || []).map(f => `<div style="font-size:12px; color:var(--primary); display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">description</span> ${f.name}</div>`).join('')}
+                </div>
+            </div>
+
             <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <input type="text" id="newCommentText" class="form-control" placeholder="Escribe una actualización..." style="flex:1;">
+                <input type="text" id="newCommentText" class="form-control" placeholder="Escribe un comentario..." style="flex:1;">
                 <button class="btn btn-primary" onclick="addComment(${index})">Publicar</button>
             </div>
             <div id="commentsList" style="display:flex; flex-direction:column; gap:10px;">
@@ -476,6 +489,23 @@ window.renderPanelContent = function(index) {
             </div>
         </div>
     `;
+}
+
+window.handleFileUpload = function(event, index) {
+    const files = event.target.files;
+    if(!files || files.length === 0) return;
+    
+    if(!tableData[index].archivos) tableData[index].archivos = [];
+    
+    for(let i=0; i<files.length; i++) {
+        tableData[index].archivos.push({
+            name: files[i].name,
+            url: '#'
+        });
+    }
+    
+    saveData();
+    renderPanelContent(index);
 }
 
 window.addComment = function(index) {
