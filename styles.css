@@ -1252,3 +1252,9 @@ th:last-child {
     transform: translateX(0) !important;
 }
 
+
+/* Colores de Prioridad */
+.status-Alta { background-color: #e2445c !important; color: white !important; }
+.status-Media { background-color: #a25ddc !important; color: white !important; }
+.status-Baja { background-color: #ffcb00 !important; color: #323338 !important; font-weight: 500; }
+
