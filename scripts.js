@@ -422,8 +422,23 @@ if(document.getElementById('toggleAllBtn')) {
     document.getElementById('toggleAllBtn').addEventListener('click', toggleAllGroups);
 }
 
+window.panelCurrentTab = 'updates';
+window.currentPanelIndex = null;
+
+window.switchPanelTab = function(tab) {
+    document.querySelectorAll('.panel-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    window.panelCurrentTab = tab;
+    if (window.currentPanelIndex !== null) {
+        renderPanelContent(window.currentPanelIndex);
+    }
+}
+
 window.openPanel = function(index) {
     if (currentUserRole === 'viewer') return;
+    window.currentPanelIndex = index;
+    const row = tableData[index];
+    document.getElementById('panel-title').innerText = row.iniciativa || row.frente || `Solicitud #${row.id}`;
     document.getElementById('task-panel').classList.add('open');
     renderPanelContent(index);
 }
@@ -438,57 +453,107 @@ window.renderPanelContent = function(index) {
     
     if(!row.comentarios) row.comentarios = [];
 
-    let commentsHtml = '';
-    row.comentarios.forEach(c => {
-        commentsHtml += `<div class="comment-item">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <strong>${c.author}</strong> <span style="font-size:11px; color:var(--text-muted);">${c.date}</span>
-            </div>
-            <p>${c.text}</p>
-        </div>`;
-    });
-
-    content.innerHTML = `
-        <div class="panel-section">
-            <h3 style="margin-bottom:15px; color:white; border-bottom:1px solid var(--border-color); padding-bottom:8px;">Detalles Adicionales</h3>
-            
-            <label style="display:block; margin-top:10px; font-size:13px; color:var(--text-muted);">Descripción detallada</label>
-            <textarea class="cell-textarea" style="height:80px; width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" onchange="updateCell(${index}, 'descripcion', this.value)">${row.descripcion || ''}</textarea>
-            
-            <label style="margin-top:15px; display:block; font-size:13px; color:var(--text-muted);">Horas dedicación</label>
-            <input type="number" class="cell-input" style="width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)">
-            
-            <label style="margin-top:15px; display:block; font-size:13px; color:var(--text-muted);">Impresiones</label>
-            <textarea class="cell-textarea" style="height:60px; width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" onchange="updateCell(${index}, 'impresiones', this.value)">${row.impresiones || ''}</textarea>
-            
-            <label style="margin-top:15px; display:block; font-size:13px; color:var(--text-muted);">Observaciones</label>
-            <textarea class="cell-textarea" style="height:60px; width:100%; border:1px solid var(--border-color); padding:8px; border-radius:4px;" onchange="updateCell(${index}, 'observaciones', this.value)">${row.observaciones || ''}</textarea>
-        </div>
-
-        <div class="panel-section" style="margin-top:20px;">
-            <h3 style="margin-bottom:15px; color:white;">Comentarios</h3>
-            
-            <div style="margin-bottom:15px;">
-                <label style="display:block; font-size:13px; color:var(--text-muted); margin-bottom:5px;">Archivos adjuntos</label>
-                <div style="border:1px dashed var(--border-color); padding:15px; text-align:center; border-radius:4px; cursor:pointer;" onclick="document.getElementById('fileInput_${index}').click()">
-                    <span class="material-symbols-outlined" style="color:var(--text-muted); font-size:24px;">upload_file</span>
-                    <div style="font-size:12px; color:var(--text-muted);">Sube tus documentos o imágenes aquí</div>
-                    <input type="file" id="fileInput_${index}" style="display:none;" multiple onchange="handleFileUpload(event, ${index})">
+    if (window.panelCurrentTab === 'updates') {
+        let commentsHtml = '';
+        row.comentarios.forEach(c => {
+            const avatarInitial = c.author ? c.author.charAt(0).toUpperCase() : '?';
+            commentsHtml += `
+            <div class="monday-comment-item">
+                <div class="monday-comment-header">
+                    <div class="monday-comment-author">
+                        <div class="monday-comment-avatar">${avatarInitial}</div>
+                        ${c.author}
+                    </div>
+                    <div class="monday-comment-time">
+                        <span class="material-symbols-outlined" style="font-size:14px;">schedule</span> ${c.date}
+                    </div>
                 </div>
-                <div id="fileList_${index}" style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
-                    ${(row.archivos || []).map(f => `<div style="font-size:12px; color:var(--primary); display:flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">description</span> ${f.name}</div>`).join('')}
+                <div class="monday-comment-body">${c.text}</div>
+                <div class="monday-comment-footer">
+                    <span><span class="material-symbols-outlined" style="font-size:16px;">thumb_up</span> Like</span>
+                    <span><span class="material-symbols-outlined" style="font-size:16px;">reply</span> Reply</span>
+                </div>
+            </div>`;
+        });
+
+        content.innerHTML = `
+            <div class="update-editor-wrapper">
+                <div class="editor-toolbar">
+                    <span class="material-symbols-outlined">format_bold</span>
+                    <span class="material-symbols-outlined">format_italic</span>
+                    <span class="material-symbols-outlined">format_underlined</span>
+                    <span class="material-symbols-outlined">strikethrough_s</span>
+                    <span style="border-left:1px solid #e6e9ef; height:20px; margin:0 5px;"></span>
+                    <span class="material-symbols-outlined">format_list_bulleted</span>
+                    <span class="material-symbols-outlined">format_list_numbered</span>
+                    <span class="material-symbols-outlined">link</span>
+                </div>
+                <textarea id="newCommentText" class="editor-textarea" placeholder="Escribe una actualización..."></textarea>
+                <div class="editor-footer">
+                    <div class="footer-tools">
+                        <span onclick="document.getElementById('fileInput_${index}').click()">
+                            <span class="material-symbols-outlined">attach_file</span> Add files
+                        </span>
+                        <span>GIF</span>
+                        <span><span class="material-symbols-outlined">mood</span> Emoji</span>
+                        <span><span class="material-symbols-outlined">alternate_email</span> Mention</span>
+                        <input type="file" id="fileInput_${index}" style="display:none;" multiple onchange="handleFileUpload(event, ${index})">
+                    </div>
+                    <button class="btn btn-primary" onclick="addComment(${index})">Update</button>
                 </div>
             </div>
-
-            <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <input type="text" id="newCommentText" class="form-control" placeholder="Escribe un comentario..." style="flex:1;">
-                <button class="btn btn-primary" onclick="addComment(${index})">Publicar</button>
-            </div>
-            <div id="commentsList" style="display:flex; flex-direction:column; gap:10px;">
+            <div id="commentsList">
                 ${commentsHtml}
             </div>
-        </div>
-    `;
+        `;
+    } else if (window.panelCurrentTab === 'files') {
+        let filesHtml = (row.archivos || []).map(f => `
+            <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+                <span class="material-symbols-outlined" style="font-size:32px; color:#0073ea;">description</span>
+                <div style="flex:1;">
+                    <div style="color:#323338; font-weight:500; font-size:14px;">${f.name}</div>
+                    <div style="color:#676879; font-size:12px;">Documento adjunto</div>
+                </div>
+            </div>
+        `).join('');
+        
+        if (!filesHtml) filesHtml = `<div style="text-align:center; color:#676879; margin-top:40px;">No hay archivos aún.</div>`;
+
+        content.innerHTML = `
+            <div style="margin-bottom:20px; text-align:right;">
+                <button class="btn" style="border:1px solid #c3c6d4; background:white; color:#323338; font-weight:500;" onclick="document.getElementById('tabFileInput_${index}').click()">
+                    <span class="material-symbols-outlined" style="vertical-align:middle; font-size:18px;">add</span> Add file
+                </button>
+                <input type="file" id="tabFileInput_${index}" style="display:none;" multiple onchange="handleFileUpload(event, ${index})">
+            </div>
+            ${filesHtml}
+        `;
+    } else if (window.panelCurrentTab === 'info') {
+        content.innerHTML = `
+            <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:20px;">
+                
+                <div class="info-box-field">
+                    <label class="info-box-label">Descripción detallada</label>
+                    <textarea class="info-box-input" style="height:80px; resize:none;" onchange="updateCell(${index}, 'descripcion', this.value)">${row.descripcion || ''}</textarea>
+                </div>
+                
+                <div class="info-box-field">
+                    <label class="info-box-label">Horas dedicación</label>
+                    <input type="number" class="info-box-input" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)">
+                </div>
+                
+                <div class="info-box-field">
+                    <label class="info-box-label">Impresiones</label>
+                    <textarea class="info-box-input" style="height:60px; resize:none;" onchange="updateCell(${index}, 'impresiones', this.value)">${row.impresiones || ''}</textarea>
+                </div>
+                
+                <div class="info-box-field">
+                    <label class="info-box-label">Observaciones</label>
+                    <textarea class="info-box-input" style="height:60px; resize:none;" onchange="updateCell(${index}, 'observaciones', this.value)">${row.observaciones || ''}</textarea>
+                </div>
+            </div>
+        `;
+    }
 }
 
 window.handleFileUpload = function(event, index) {
