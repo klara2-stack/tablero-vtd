@@ -246,11 +246,18 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="scripts.js"></script>
 
-    <!-- Panel Lateral de Detalle (Estilo Moderno/Industrial) -->
+    <!-- Panel Lateral de Detalle (Monday Style) -->
     <div id="task-panel" class="side-panel">
-        <div class="panel-header">
-            <button onclick="closePanel()" class="close-btn">×</button>
-            <h2 id="panel-title">Detalle de la Tarea</h2>
+        <div class="panel-header-v2">
+            <button onclick="closePanel()" class="icon-btn close-panel-btn">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <h2 id="panel-title" class="panel-v2-title">Detalle de la Tarea</h2>
+            <div class="panel-tabs">
+                <div class="panel-tab active" id="tab-updates" onclick="switchPanelTab('updates')">Actualizaciones</div>
+                <div class="panel-tab" id="tab-files" onclick="switchPanelTab('files')">Archivos</div>
+                <div class="panel-tab" id="tab-info" onclick="switchPanelTab('info')">Cajas de Info</div>
+            </div>
         </div>
         <div id="panel-content" class="panel-body">
             <!-- Aquí se inyectará la info de la tarjeta dinámicamente -->
