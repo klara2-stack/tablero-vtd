@@ -225,7 +225,7 @@ function getAvatarHTML(nameOrArray) {
 }
 
 let currentAssignRowIndex = null;
-window.openAssignModal = function(index) {
+window.openAssignModal = function(event, index) {
     if (currentUserRole === 'viewer') return;
     currentAssignRowIndex = index;
     const row = tableData[index];
@@ -235,9 +235,30 @@ window.openAssignModal = function(index) {
     container.innerHTML = '';
     OPTIONS.responsables.forEach(resp => {
         const checked = reps.includes(resp) ? 'checked' : '';
-        container.innerHTML += `<label style="display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="${resp}" ${checked}> ${resp}</label>`;
+        const initial = resp.charAt(0).toUpperCase();
+        container.innerHTML += `
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:var(--text-main);">
+            <input type="checkbox" value="${resp}" ${checked} style="accent-color: var(--primary);"> 
+            <div class="user-avatar" style="width:24px; height:24px; font-size:11px; margin-left:0;">${initial}</div>
+            ${resp}
+        </label>`;
     });
-    document.getElementById('assignModal').style.display = 'flex';
+
+    const modal = document.getElementById('assignModal');
+    modal.style.display = 'block';
+
+    if (event) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        let top = rect.bottom + window.scrollY + 5;
+        let left = rect.left + window.scrollX - 100;
+        
+        if (left + 280 > window.innerWidth) left = window.innerWidth - 300;
+        if (left < 10) left = 10;
+        if (top + 280 > window.innerHeight + window.scrollY) top = rect.top + window.scrollY - 270; 
+
+        modal.style.top = top + 'px';
+        modal.style.left = left + 'px';
+    }
 }
 window.closeAssignModal = function() {
     document.getElementById('assignModal').style.display = 'none';
@@ -332,7 +353,7 @@ function renderRows() {
             let fechaSolTD = `<td><input type="date" class="cell-input" value="${row.fechaSolicitud || ''}" onchange="updateCell(${index}, 'fechaSolicitud', this.value)" ${disabled}></td>`;
             let frenteTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'frente', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.frenteTrabajo, row.frente)}</select></td>`;
             let initTD = `<td><select class="cell-select" onchange="updateCell(${index}, 'iniciativa', this.value)" ${disabled}>${getOptionsHTML(OPTIONS.iniciativas, row.iniciativa)}</select></td>`;
-            let respTD = `<td style="text-align:center; cursor:${disabled ? 'default' : 'pointer'};" onclick="${disabled ? '' : `openAssignModal(${index})`}">
+            let respTD = `<td style="text-align:center; cursor:${disabled ? 'default' : 'pointer'};" onclick="${disabled ? '' : `openAssignModal(event, ${index})`}">
                 <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
                     ${getAvatarHTML(row.responsable)}
                 </div>
