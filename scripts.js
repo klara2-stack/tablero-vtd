@@ -545,20 +545,32 @@ window.renderPanelContent = function(index) {
             </div>
         `;
     } else if (window.panelCurrentTab === 'files') {
-        let filesHtml = (row.archivos || []).map((f, fIndex) => `
-            <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-                <span class="material-symbols-outlined" style="font-size:32px; color:#0073ea;">${f.type && f.type.startsWith('image/') ? 'image' : 'description'}</span>
-                <div style="flex:1; overflow:hidden;">
-                    <div style="color:#323338; font-weight:500; font-size:14px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${f.name}</div>
-                    <div style="color:#676879; font-size:12px;">Documento adjunto</div>
+        let filesHtml = (row.archivos || []).map((f, fIndex) => {
+            const isImage = f.type && f.type.startsWith('image/');
+            const uploadDate = f.date || 'Recientemente';
+            const thumbnail = isImage 
+                ? `<div style="width:56px; height:56px; border-radius:6px; overflow:hidden; border:1px solid #e6e9ef; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><img src="${f.url}" style="width:100%; height:100%; object-fit:cover;"></div>` 
+                : `<div style="width:56px; height:56px; border-radius:6px; overflow:hidden; border:1px solid #e6e9ef; background:#f5f6f8; color:#676879; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><span class="material-symbols-outlined" style="font-size:28px;">description</span></div>`;
+            return `
+            <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:16px; margin-bottom:12px; display:flex; align-items:flex-start; gap:16px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.02)'">
+                ${thumbnail}
+                <div style="flex:1; overflow:hidden; min-width:0; padding-top:2px;">
+                    <div style="color:#323338; font-weight:600; font-size:14px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; margin-bottom:6px;">${f.name}</div>
+                    <div style="color:#676879; font-size:12px; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span class="material-symbols-outlined" style="font-size:14px;">navigate_next</span> 
+                        <span class="material-symbols-outlined" style="font-size:14px;">grid_on</span> 
+                        Columna de formatos
+                    </div>
+                    <div style="color:#676879; font-size:12px;">${uploadDate}</div>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    ${f.type && f.type.startsWith('image/') ? `<a href="${f.url}" target="_blank" style="color:var(--text-muted);" title="Previsualizar"><span class="material-symbols-outlined">visibility</span></a>` : ''}
-                    <a href="${f.url}" download="${f.name}" style="color:var(--text-muted);" title="Descargar"><span class="material-symbols-outlined">download</span></a>
-                    <span style="color:var(--text-muted); cursor:pointer;" onclick="deleteFile(${index}, ${fIndex})" title="Eliminar"><span class="material-symbols-outlined">delete</span></span>
+                <div style="display:flex; gap:12px; padding-top:4px;">
+                    <span style="color:#676879; cursor:pointer;" onclick="deleteFile(${index}, ${fIndex})" title="Eliminar"><span class="material-symbols-outlined" style="font-size:20px;">delete</span></span>
+                    <a href="${f.url}" download="${f.name}" style="color:#676879; cursor:pointer; text-decoration:none;" title="Descargar"><span class="material-symbols-outlined" style="font-size:20px;">download</span></a>
+                    ${isImage ? `<a href="${f.url}" target="_blank" style="color:#676879; cursor:pointer; text-decoration:none;" title="Previsualizar"><span class="material-symbols-outlined" style="font-size:20px;">visibility</span></a>` : ''}
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
         
         if (!filesHtml) filesHtml = `<div style="text-align:center; color:#676879; margin-top:40px;">No hay archivos aún.</div>`;
 
@@ -608,10 +620,11 @@ window.handleFileUpload = function(event, index) {
     for(let i=0; i<files.length; i++) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            tableData[index].archivos.push({
+            tableData[index].archivos.unshift({
                 name: files[i].name,
                 url: e.target.result,
-                type: files[i].type
+                type: files[i].type,
+                date: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             });
             saveData();
             renderPanelContent(index);
