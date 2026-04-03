@@ -491,8 +491,9 @@ window.renderPanelContent = function(index) {
 
     if (window.panelCurrentTab === 'updates') {
         let commentsHtml = '';
-        row.comentarios.forEach(c => {
+        row.comentarios.forEach((c, cIndex) => {
             const avatarInitial = c.author ? c.author.charAt(0).toUpperCase() : '?';
+            const likesCount = c.likes ? c.likes : 0;
             commentsHtml += `
             <div class="monday-comment-item">
                 <div class="monday-comment-header">
@@ -506,8 +507,9 @@ window.renderPanelContent = function(index) {
                 </div>
                 <div class="monday-comment-body">${c.text}</div>
                 <div class="monday-comment-footer">
-                    <span><span class="material-symbols-outlined" style="font-size:16px;">thumb_up</span> Like</span>
-                    <span><span class="material-symbols-outlined" style="font-size:16px;">reply</span> Reply</span>
+                    <span onclick="likeComment(${index}, ${cIndex})" style="color: ${c.likedByMe ? 'var(--primary)' : 'inherit'}"><span class="material-symbols-outlined" style="font-size:16px;">thumb_up</span> Like ${likesCount > 0 ? `(${likesCount})` : ''}</span>
+                    <span onclick="document.getElementById('newCommentText').focus()"><span class="material-symbols-outlined" style="font-size:16px;">reply</span> Reply</span>
+                    <span onclick="deleteComment(${index}, ${cIndex})" style="color: #e2445c; margin-left: auto;"><span class="material-symbols-outlined" style="font-size:16px;">delete</span> Eliminar</span>
                 </div>
             </div>`;
         });
@@ -515,16 +517,16 @@ window.renderPanelContent = function(index) {
         content.innerHTML = `
             <div class="update-editor-wrapper">
                 <div class="editor-toolbar">
-                    <span class="material-symbols-outlined">format_bold</span>
-                    <span class="material-symbols-outlined">format_italic</span>
-                    <span class="material-symbols-outlined">format_underlined</span>
-                    <span class="material-symbols-outlined">strikethrough_s</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('bold', false, null)">format_bold</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('italic', false, null)">format_italic</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('underline', false, null)">format_underlined</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('strikeThrough', false, null)">strikethrough_s</span>
                     <span style="border-left:1px solid #e6e9ef; height:20px; margin:0 5px;"></span>
-                    <span class="material-symbols-outlined">format_list_bulleted</span>
-                    <span class="material-symbols-outlined">format_list_numbered</span>
-                    <span class="material-symbols-outlined">link</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('insertUnorderedList', false, null)">format_list_bulleted</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('insertOrderedList', false, null)">format_list_numbered</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); const url=prompt('Enlace URL:'); if(url) document.execCommand('createLink', false, url);">link</span>
                 </div>
-                <textarea id="newCommentText" class="editor-textarea" placeholder="Escribe una actualización..."></textarea>
+                <div id="newCommentText" class="editor-textarea" contenteditable="true" style="min-height: 100px; padding: 15px; outline: none; white-space: pre-wrap;" data-placeholder="Escribe una actualización..."></div>
                 <div class="editor-footer">
                     <div class="footer-tools">
                         <span onclick="document.getElementById('fileInput_${index}').click()">
@@ -538,17 +540,22 @@ window.renderPanelContent = function(index) {
                     <button class="btn btn-primary" onclick="addComment(${index})">Update</button>
                 </div>
             </div>
-            <div id="commentsList">
+            <div id="commentsList" style="margin-top: 10px;">
                 ${commentsHtml}
             </div>
         `;
     } else if (window.panelCurrentTab === 'files') {
-        let filesHtml = (row.archivos || []).map(f => `
+        let filesHtml = (row.archivos || []).map((f, fIndex) => `
             <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:15px; margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-                <span class="material-symbols-outlined" style="font-size:32px; color:#0073ea;">description</span>
-                <div style="flex:1;">
-                    <div style="color:#323338; font-weight:500; font-size:14px;">${f.name}</div>
+                <span class="material-symbols-outlined" style="font-size:32px; color:#0073ea;">${f.type && f.type.startsWith('image/') ? 'image' : 'description'}</span>
+                <div style="flex:1; overflow:hidden;">
+                    <div style="color:#323338; font-weight:500; font-size:14px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${f.name}</div>
                     <div style="color:#676879; font-size:12px;">Documento adjunto</div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    ${f.type && f.type.startsWith('image/') ? `<a href="${f.url}" target="_blank" style="color:var(--text-muted);" title="Previsualizar"><span class="material-symbols-outlined">visibility</span></a>` : ''}
+                    <a href="${f.url}" download="${f.name}" style="color:var(--text-muted);" title="Descargar"><span class="material-symbols-outlined">download</span></a>
+                    <span style="color:var(--text-muted); cursor:pointer;" onclick="deleteFile(${index}, ${fIndex})" title="Eliminar"><span class="material-symbols-outlined">delete</span></span>
                 </div>
             </div>
         `).join('');
@@ -599,28 +606,70 @@ window.handleFileUpload = function(event, index) {
     if(!tableData[index].archivos) tableData[index].archivos = [];
     
     for(let i=0; i<files.length; i++) {
-        tableData[index].archivos.push({
-            name: files[i].name,
-            url: '#'
-        });
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            tableData[index].archivos.push({
+                name: files[i].name,
+                url: e.target.result,
+                type: files[i].type
+            });
+            saveData();
+            renderPanelContent(index);
+        };
+        reader.readAsDataURL(files[i]);
     }
+}
+
+window.deleteFile = function(rowIndex, fileIndex) {
+    if(confirm('¿Seguro de eliminar este archivo?')) {
+        tableData[rowIndex].archivos.splice(fileIndex, 1);
+        saveData();
+        renderPanelContent(rowIndex);
+    }
+}
+
+window.likeComment = function(rowIndex, commentIndex) {
+    const row = tableData[rowIndex];
+    if(!row.comentarios[commentIndex].likes) row.comentarios[commentIndex].likes = 0;
     
+    if(row.comentarios[commentIndex].likedByMe) {
+        row.comentarios[commentIndex].likes--;
+        row.comentarios[commentIndex].likedByMe = false;
+    } else {
+        row.comentarios[commentIndex].likes++;
+        row.comentarios[commentIndex].likedByMe = true;
+    }
     saveData();
-    renderPanelContent(index);
+    renderPanelContent(rowIndex);
+}
+
+window.deleteComment = function(rowIndex, commentIndex) {
+    if(confirm('¿Seguro de eliminar este comentario?')) {
+        tableData[rowIndex].comentarios.splice(commentIndex, 1);
+        saveData();
+        renderPanelContent(rowIndex);
+    }
 }
 
 window.addComment = function(index) {
-    const text = document.getElementById('newCommentText').value.trim();
-    if(text === '') return;
+    const editor = document.getElementById('newCommentText');
+    const text = editor.innerHTML.trim();
+    if(editor.innerText.trim() === '') return;
+    
     if(!tableData[index].comentarios) tableData[index].comentarios = [];
+    
+    const profileDisplay = (allProfiles && currentUserEmail && allProfiles[currentUserEmail] && allProfiles[currentUserEmail].name) 
+                            ? allProfiles[currentUserEmail].name 
+                            : (currentUserEmail ? currentUserEmail.split('@')[0] : 'Admin');
+                            
     tableData[index].comentarios.unshift({
-        author: currentUserEmail ? currentUserEmail.split('@')[0] : 'Admin',
+        author: profileDisplay,
         date: new Date().toLocaleString(),
         text: text
     });
     saveData();
-    renderRows(); // Para actualizar la burbuja en la tabla
-    renderPanelContent(index); // Refrescar panel
+    renderPanelContent(index);
+    renderRows(); 
 }
 
 // Handle Custom "Otro" value
