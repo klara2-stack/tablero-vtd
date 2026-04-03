@@ -1258,3 +1258,12 @@ th:last-child {
 .status-Media { background-color: #a25ddc !important; color: white !important; }
 .status-Baja { background-color: #ffcb00 !important; color: #323338 !important; font-weight: 500; }
 
+
+[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #676879;
+    pointer-events: none;
+    display: block; /* For Firefox */
+}
+.editor-toolbar span[onmousedown] { cursor: pointer; }
+
