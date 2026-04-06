@@ -323,7 +323,7 @@ function renderRows() {
             colsTr.className = 'group-columns-row';
             colsTr.innerHTML = `
                 <th style="width: 40px;"></th>
-                <th style="min-width: 100px;">Número de solicitud</th>
+                <th style="min-width: 100px;">Solicitud</th>
                 <th style="width: 50px;"></th>
                 <th style="min-width: 160px;">Fecha de solicitud</th>
                 <th style="min-width: 150px;">Frente de trabajo</th>
@@ -381,7 +381,7 @@ function renderRows() {
             
             let prioridadTD = `<td style="position:relative">
                 <select class="cell-select" style="position:relative; z-index:2; opacity:0; appearance:auto; height:100%; width:100%" onchange="updateCell(${index}, 'prioridad', this.value)" ${disabled}>
-                    ${getOptionsHTML([''].concat(OPTIONS.prioridad), row.prioridad)}
+                    ${getOptionsHTML(OPTIONS.prioridad, row.prioridad)}
                 </select>
                 <div class="status-label ${bgPrioClass}">${row.prioridad || ''}</div>
             </td>`;
@@ -524,7 +524,7 @@ window.renderPanelContent = function(index) {
                     <span style="border-left:1px solid #e6e9ef; height:20px; margin:0 5px;"></span>
                     <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('insertUnorderedList', false, null)">format_list_bulleted</span>
                     <span class="material-symbols-outlined" onmousedown="event.preventDefault(); document.execCommand('insertOrderedList', false, null)">format_list_numbered</span>
-                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); const url=prompt('Enlace URL:'); if(url) document.execCommand('createLink', false, url);">link</span>
+                    <span class="material-symbols-outlined" onmousedown="event.preventDefault(); window.promptLink();">link</span>
                 </div>
                 <div id="newCommentText" class="editor-textarea" contenteditable="true" style="min-height: 100px; padding: 15px; outline: none; white-space: pre-wrap;" data-placeholder="Escribe una actualización..."></div>
                 <div class="editor-footer">
@@ -566,7 +566,7 @@ window.renderPanelContent = function(index) {
                 <div style="display:flex; gap:12px; padding-top:4px;">
                     <span style="color:#676879; cursor:pointer;" onclick="deleteFile(${index}, ${fIndex})" title="Eliminar"><span class="material-symbols-outlined" style="font-size:20px;">delete</span></span>
                     <a href="${f.url}" download="${f.name}" style="color:#676879; cursor:pointer; text-decoration:none;" title="Descargar"><span class="material-symbols-outlined" style="font-size:20px;">download</span></a>
-                    ${isImage ? `<a href="${f.url}" target="_blank" style="color:#676879; cursor:pointer; text-decoration:none;" title="Previsualizar"><span class="material-symbols-outlined" style="font-size:20px;">visibility</span></a>` : ''}
+                    ${isImage ? `<span onclick="openImageViewer('${f.url}')" style="color:#676879; cursor:pointer;" title="Previsualizar"><span class="material-symbols-outlined" style="font-size:20px;">visibility</span></span>` : ''}
                 </div>
             </div>
             `;
@@ -586,12 +586,6 @@ window.renderPanelContent = function(index) {
     } else if (window.panelCurrentTab === 'info') {
         content.innerHTML = `
             <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:20px;">
-                
-                <div class="info-box-field">
-                    <label class="info-box-label">Descripción detallada</label>
-                    <textarea class="info-box-input" style="height:80px; resize:none;" onchange="updateCell(${index}, 'descripcion', this.value)">${row.descripcion || ''}</textarea>
-                </div>
-                
                 <div class="info-box-field">
                     <label class="info-box-label">Horas dedicación</label>
                     <input type="number" class="info-box-input" value="${row.horas || ''}" onchange="updateCell(${index}, 'horas', this.value)">
@@ -600,11 +594,6 @@ window.renderPanelContent = function(index) {
                 <div class="info-box-field">
                     <label class="info-box-label">Impresiones</label>
                     <textarea class="info-box-input" style="height:60px; resize:none;" onchange="updateCell(${index}, 'impresiones', this.value)">${row.impresiones || ''}</textarea>
-                </div>
-                
-                <div class="info-box-field">
-                    <label class="info-box-label">Observaciones</label>
-                    <textarea class="info-box-input" style="height:60px; resize:none;" onchange="updateCell(${index}, 'observaciones', this.value)">${row.observaciones || ''}</textarea>
                 </div>
             </div>
         `;
@@ -1010,3 +999,183 @@ document.querySelectorAll('.nav-item').forEach(el => {
         }
     });
 });
+
+window.showCustomModal = function(title, body, type = 'confirm', placeholder = '', onConfirm) {
+    document.getElementById('genericModalTitle').innerText = title;
+    document.getElementById('genericModalBody').innerHTML = body;
+    const inputObj = document.getElementById('genericModalInput');
+    if (type === 'prompt') {
+        inputObj.style.display = 'block';
+        inputObj.placeholder = placeholder;
+        inputObj.value = '';
+        inputObj.focus();
+    } else {
+        inputObj.style.display = 'none';
+    }
+    document.getElementById('genericModalOverlay').style.display = 'flex';
+    
+    // Replace nodes to prevent duplicate listeners
+    const confirmBtn = document.getElementById('genericModalConfirmBtn');
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    const cancelBtn = document.getElementById('genericModalCancelBtn');
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+    newCancelBtn.onclick = () => {
+        document.getElementById('genericModalOverlay').style.display = 'none';
+    };
+
+    newConfirmBtn.onclick = () => {
+        document.getElementById('genericModalOverlay').style.display = 'none';
+        if (type === 'prompt') {
+            onConfirm(document.getElementById('genericModalInput').value);
+        } else {
+            onConfirm();
+        }
+    };
+}
+
+window.deleteRow = function(index) {
+    showCustomModal('tablero-vtd.vercel.app dice', '¿Seguro que deseas eliminar esta fila?', 'confirm', '', () => {
+        tableData.splice(index, 1);
+        saveData();
+        renderRows();
+    });
+}
+
+window.deleteFile = function(rowIndex, fileIndex) {
+    showCustomModal('Confirmar eliminación', '¿Seguro de eliminar este archivo?', 'confirm', '', () => {
+        tableData[rowIndex].archivos.splice(fileIndex, 1);
+        saveData();
+        renderPanelContent(rowIndex);
+    });
+}
+
+window.deleteComment = function(rowIndex, commentIndex) {
+    showCustomModal('Confirmar eliminación', '¿Seguro de eliminar este comentario?', 'confirm', '', () => {
+        tableData[rowIndex].comentarios.splice(commentIndex, 1);
+        saveData();
+        renderPanelContent(rowIndex);
+    });
+}
+
+window.promptLink = function() {
+    const sel = window.getSelection();
+    if(sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    showCustomModal('Añadir Enlace', 'Ingresa la URL a continuación para vincularla al texto seleccionado:', 'prompt', 'https://...', (url) => { 
+        if(url) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+            document.execCommand('createLink', false, url); 
+        }
+    });
+}
+
+window.openImageViewer = function(url) {
+    if (!url) return;
+    document.getElementById('imageViewerPreview').src = url;
+    document.getElementById('imageViewerOverlay').style.display = 'flex';
+}
+
+// Fitlers Logic
+window.currentSearchFilter = '';
+window.currentPersonFilters = [];
+
+window.updateTableFilter = function() {
+    const el = document.getElementById('globalSearchInput');
+    window.currentSearchFilter = el ? el.value.toLowerCase() : '';
+    applyFilters();
+}
+
+window.togglePersonFilter = function(e) {
+    const popover = document.getElementById('personFilterPopover');
+    if (popover.style.display === 'block') {
+        popover.style.display = 'none';
+        return;
+    }
+    
+    // Position
+    const rect = e.currentTarget.getBoundingClientRect();
+    popover.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+    popover.style.left = (rect.left + window.scrollX - 50) + 'px';
+    
+    // Populate
+    let keys = Object.keys(allProfiles);
+    if(keys.length === 0 && currentUserEmail) keys = [currentUserEmail];
+    
+    let html = '';
+    keys.forEach(email => {
+        const p = allProfiles[email] || { name: email.split('@')[0], color: '#0073ea' };
+        const initial = p.name ? p.name.charAt(0).toUpperCase() : '?';
+        const isChecked = window.currentPersonFilters.includes(email) ? 'checked' : '';
+        html += `
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--text-main); font-size:13px;">
+                <input type="checkbox" ${isChecked} onchange="window.updatePersonFilter('${email}', this.checked)" style="accent-color:var(--primary);">
+                <div style="background:${p.color}; width:24px; height:24px; border-radius:50%; color:white; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;">${initial}</div>
+                <div style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</div>
+            </label>
+        `;
+    });
+    
+    document.getElementById('personFilterList').innerHTML = html;
+    popover.style.display = 'block';
+}
+
+window.updatePersonFilter = function(email, isChecked) {
+    if (isChecked && !window.currentPersonFilters.includes(email)) {
+        window.currentPersonFilters.push(email);
+    } else if (!isChecked) {
+        window.currentPersonFilters = window.currentPersonFilters.filter(e => e !== email);
+    }
+    applyFilters();
+}
+
+window.clearPersonFilter = function() {
+    window.currentPersonFilters = [];
+    document.querySelectorAll('#personFilterList input').forEach(el => el.checked = false);
+    applyFilters();
+}
+
+document.addEventListener('click', (e) => {
+    const popover = document.getElementById('personFilterPopover');
+    if (popover && popover.style.display === 'block' && !e.target.closest('#personFilterPopover') && !e.target.closest('[onclick*=\"togglePersonFilter\"]')) {
+        popover.style.display = 'none';
+    }
+});
+
+function applyFilters() {
+    const searchTerm = window.currentSearchFilter.toLowerCase();
+    const persons = window.currentPersonFilters;
+    
+    document.querySelectorAll('tbody[id^=\"group_rows_\"] tr:not(.group-columns-row):not(:last-child)').forEach((tr) => {
+        const index = tr.dataset.index;
+        if (!index) return;
+        const row = tableData[index];
+        if (!row) return;
+        
+        let searchMatched = false;
+        if (!searchTerm) {
+            searchMatched = true;
+        } else {
+            const str = JSON.stringify(row).toLowerCase();
+            if (str.includes(searchTerm)) searchMatched = true;
+        }
+        
+        let personMatched = false;
+        if (persons.length === 0) {
+            personMatched = true;
+        } else if (row.responsable && row.responsable.length > 0) {
+            personMatched = row.responsable.some(r => persons.includes(r.email));
+        }
+        
+        if (searchMatched && personMatched) {
+            tr.style.display = '';
+        } else {
+            tr.style.display = 'none';
+        }
+    });
+}
