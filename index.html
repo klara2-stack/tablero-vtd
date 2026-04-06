@@ -127,24 +127,32 @@
                             <span class="material-symbols-outlined"
                                 style="font-size:16px; margin-left:4px;">expand_more</span></button>
 
-                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; transition:color 0.2s;"
-                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
+                        <div
+                            style="display:flex; align-items:center; gap:6px; color:var(--text-muted); position:relative;">
                             <span class="material-symbols-outlined" style="font-size:20px;">search</span>
-                            <span style="font-size:14px;">Buscar</span>
+                            <input type="text" id="globalSearchInput" placeholder="Buscar..."
+                                style="background:transparent; border:none; border-bottom:1px solid transparent; color:white; outline:none; font-size:14px; width:100px; transition:width 0.2s, border-color 0.2s;"
+                                onfocus="this.style.width='160px'; this.style.borderBottom='1px solid var(--primary)';"
+                                onblur="this.style.width='100px'; this.style.borderBottom='1px solid transparent';"
+                                oninput="window.updateTableFilter()">
                         </div>
 
-                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; transition:color 0.2s;"
-                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
+                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; position:relative;"
+                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'"
+                            onclick="window.togglePersonFilter(event)">
                             <span class="material-symbols-outlined" style="font-size:20px;">person_outline</span>
                             <span style="font-size:14px;">Persona</span>
                         </div>
+                    </div>
 
-                        <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); cursor:pointer; transition:color 0.2s;"
-                            onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--text-muted)'">
-                            <span class="material-symbols-outlined" style="font-size:20px;">filter_list</span>
-                            <span style="font-size:14px;">Filtrar</span>
-                            <span class="material-symbols-outlined" style="font-size:16px;">expand_more</span>
-                        </div>
+                    <!-- Person Filter Popover -->
+                    <div id="personFilterPopover"
+                        style="display:none; position:absolute; z-index:1002; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:12px; box-shadow:0 4px 15px rgba(0,0,0,0.5); top:0; left:0; width:220px;">
+                        <div style="font-size:13px; font-weight:600; margin-bottom:8px; color:white;">Filtrar por
+                            responsable</div>
+                        <div id="personFilterList" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        <button class="btn btn-full" style="margin-top:12px; font-size:12px; padding:4px;"
+                            onclick="window.clearPersonFilter()">Limpiar filtro</button>
                     </div>
 
                     <div class="actions" style="margin-left:auto;">
@@ -262,6 +270,36 @@
         <div id="panel-content" class="panel-body">
             <!-- Aquí se inyectará la info de la tarjeta dinámicamente -->
         </div>
+    </div>
+
+    <!-- Generic Minimalist Modal for confirm / prompt -->
+    <div class="auth-overlay" id="genericModalOverlay"
+        style="display: none; z-index: 2000; align-items:center; justify-content:center;">
+        <div class="auth-modal"
+            style="width: 340px; max-width: 90%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+            <h2 id="genericModalTitle" style="font-size: 16px; margin-bottom: 12px; color: white;"></h2>
+            <p id="genericModalBody"
+                style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height:1.4;"></p>
+            <input type="text" id="genericModalInput" class="form-control" style="display:none; margin-bottom:20px;"
+                placeholder="">
+            <div style="display: flex; gap: 10px; justify-content:flex-end;">
+                <button class="btn" id="genericModalCancelBtn"
+                    style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 6px 14px; font-size:13px; flex:1;">Cancelar</button>
+                <button class="btn btn-primary" id="genericModalConfirmBtn"
+                    style="padding: 6px 14px; font-size:13px; flex:1;">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Pre-Viewer Modal (Lightbox) -->
+    <div class="auth-overlay" id="imageViewerOverlay"
+        style="display: none; z-index: 2000; align-items:center; justify-content:center; background: rgba(0,0,0,0.85);"
+        onclick="this.style.display='none'">
+        <span class="material-symbols-outlined"
+            style="position:absolute; top:20px; right:20px; color:white; font-size:32px; cursor:pointer;">close</span>
+        <img id="imageViewerPreview" src=""
+            style="max-width:90%; max-height:90vh; border-radius:8px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"
+            onclick="event.stopPropagation()">
     </div>
 </body>
 
