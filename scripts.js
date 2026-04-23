@@ -74,13 +74,8 @@ document.getElementById('loginBtn').addEventListener('click', () => {
             currentUserRole = 'admin';
         } else if (['c.fresneda@uniandes.edu.co', 'd.quirogac@uniandes.edu.co', 'k.lara2@uniandes.edu.co'].includes(emailInput)) {
             currentUserRole = 'editor';
-        } else if (['verosu@uniandes.edu.co', 'jp.bernal@uniandes.edu.co'].includes(emailInput)) {
-            currentUserRole = 'viewer';
         } else {
-            // Usuario bloqueado si no tiene rol
-            document.getElementById('authError').innerText = 'Tu usuario no está autorizado para este tablero.';
-            document.getElementById('authError').style.display = 'block';
-            return;
+            currentUserRole = 'viewer';
         }
 
         document.getElementById('authOverlay').style.display = 'none';
@@ -211,26 +206,26 @@ window.deleteGroup = function (groupId) {
 function getAvatarHTML(nameOrArray) {
     let names = Array.isArray(nameOrArray) ? nameOrArray : (nameOrArray ? [nameOrArray] : []);
     if (names.length === 0) return `<div class="empty-avatar"><span class="material-symbols-outlined" style="position:relative; top:2px;">person_add</span></div>`;
-    
+
     let html = '<div class="avatar-stack">';
     names.slice(0, 3).forEach((n, i) => {
         const initial = n.charAt(0).toUpperCase();
-        html += `<div class="user-avatar" title="${n}" style="z-index:${3-i}; margin-left:${i>0 ? '-8px' : '0'}; border:2px solid var(--bg-card);">${initial}</div>`;
+        html += `<div class="user-avatar" title="${n}" style="z-index:${3 - i}; margin-left:${i > 0 ? '-8px' : '0'}; border:2px solid var(--bg-card);">${initial}</div>`;
     });
-    if(names.length > 3) {
-        html += `<div class="user-avatar" style="z-index:0; margin-left:-8px; border:2px solid var(--bg-card); background:var(--bg-hover); color:var(--text-muted); font-size:11px;">+${names.length-3}</div>`;
+    if (names.length > 3) {
+        html += `<div class="user-avatar" style="z-index:0; margin-left:-8px; border:2px solid var(--bg-card); background:var(--bg-hover); color:var(--text-muted); font-size:11px;">+${names.length - 3}</div>`;
     }
     html += '</div>';
     return html;
 }
 
 let currentAssignRowIndex = null;
-window.openAssignModal = function(event, index) {
+window.openAssignModal = function (event, index) {
     if (currentUserRole === 'viewer') return;
     currentAssignRowIndex = index;
     const row = tableData[index];
     const reps = Array.isArray(row.responsable) ? row.responsable : (row.responsable ? [row.responsable] : []);
-    
+
     const container = document.getElementById('assignCheckboxes');
     container.innerHTML = '';
     OPTIONS.responsables.forEach(resp => {
@@ -251,20 +246,20 @@ window.openAssignModal = function(event, index) {
         const rect = event.currentTarget.getBoundingClientRect();
         let top = rect.bottom + window.scrollY + 5;
         let left = rect.left + window.scrollX - 100;
-        
+
         if (left + 280 > window.innerWidth) left = window.innerWidth - 300;
         if (left < 10) left = 10;
-        if (top + 280 > window.innerHeight + window.scrollY) top = rect.top + window.scrollY - 270; 
+        if (top + 280 > window.innerHeight + window.scrollY) top = rect.top + window.scrollY - 270;
 
         modal.style.top = top + 'px';
         modal.style.left = left + 'px';
     }
 }
-window.closeAssignModal = function() {
+window.closeAssignModal = function () {
     document.getElementById('assignModal').style.display = 'none';
 }
-window.saveAssignModal = function() {
-    if(currentAssignRowIndex === null) return;
+window.saveAssignModal = function () {
+    if (currentAssignRowIndex === null) return;
     const checkboxes = document.querySelectorAll('#assignCheckboxes input:checked');
     const selected = Array.from(checkboxes).map(cb => cb.value);
     tableData[currentAssignRowIndex].responsable = selected;
@@ -373,12 +368,12 @@ function renderRows() {
 
             let formatTD = `<td><select class="cell-select" onchange="handleOtro(${index}, 'formato', this)" ${disabled}>${getOptionsHTML(OPTIONS.formatos, row.formato)}</select></td>`;
             let fechaEntregaTD = `<td><input type="date" class="cell-input" value="${row.fechaEntrega || ''}" onchange="updateCell(${index}, 'fechaEntrega', this.value)" ${disabled}></td>`;
-            
+
             let bgPrioClass = 'status-placeholder';
             if (row.prioridad === 'Alta') bgPrioClass = 'status-Alta';
             else if (row.prioridad === 'Media') bgPrioClass = 'status-Media';
             else if (row.prioridad === 'Baja') bgPrioClass = 'status-Baja';
-            
+
             let prioridadTD = `<td style="position:relative">
                 <select class="cell-select" style="position:relative; z-index:2; opacity:0; appearance:auto; height:100%; width:100%" onchange="updateCell(${index}, 'prioridad', this.value)" ${disabled}>
                     ${getOptionsHTML(OPTIONS.prioridad, row.prioridad)}
@@ -445,7 +440,7 @@ window.toggleGroup = function (groupId) {
 }
 
 let allExpanded = false;
-window.toggleAllGroups = function() {
+window.toggleAllGroups = function () {
     allExpanded = !allExpanded;
     if (allExpanded) {
         groupsData.forEach(g => openGroups[g.id] = true);
@@ -454,14 +449,14 @@ window.toggleAllGroups = function() {
     }
     renderRows();
 }
-if(document.getElementById('toggleAllBtn')) {
+if (document.getElementById('toggleAllBtn')) {
     document.getElementById('toggleAllBtn').addEventListener('click', toggleAllGroups);
 }
 
 window.panelCurrentTab = 'updates';
 window.currentPanelIndex = null;
 
-window.switchPanelTab = function(tab) {
+window.switchPanelTab = function (tab) {
     document.querySelectorAll('.panel-tab').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tab).classList.add('active');
     window.panelCurrentTab = tab;
@@ -470,7 +465,7 @@ window.switchPanelTab = function(tab) {
     }
 }
 
-window.openPanel = function(index) {
+window.openPanel = function (index) {
     if (currentUserRole === 'viewer') return;
     window.currentPanelIndex = index;
     const row = tableData[index];
@@ -479,15 +474,15 @@ window.openPanel = function(index) {
     renderPanelContent(index);
 }
 
-window.closePanel = function() {
+window.closePanel = function () {
     document.getElementById('task-panel').classList.remove('open');
 }
 
-window.renderPanelContent = function(index) {
+window.renderPanelContent = function (index) {
     const row = tableData[index];
     const content = document.getElementById('panel-content');
-    
-    if(!row.comentarios) row.comentarios = [];
+
+    if (!row.comentarios) row.comentarios = [];
 
     if (window.panelCurrentTab === 'updates') {
         let commentsHtml = '';
@@ -548,8 +543,8 @@ window.renderPanelContent = function(index) {
         let filesHtml = (row.archivos || []).map((f, fIndex) => {
             const isImage = f.type && f.type.startsWith('image/');
             const uploadDate = f.date || 'Recientemente';
-            const thumbnail = isImage 
-                ? `<div style="width:56px; height:56px; border-radius:6px; overflow:hidden; border:1px solid #e6e9ef; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><img src="${f.url}" style="width:100%; height:100%; object-fit:cover;"></div>` 
+            const thumbnail = isImage
+                ? `<div style="width:56px; height:56px; border-radius:6px; overflow:hidden; border:1px solid #e6e9ef; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><img src="${f.url}" style="width:100%; height:100%; object-fit:cover;"></div>`
                 : `<div style="width:56px; height:56px; border-radius:6px; overflow:hidden; border:1px solid #e6e9ef; background:#f5f6f8; color:#676879; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><span class="material-symbols-outlined" style="font-size:28px;">description</span></div>`;
             return `
             <div style="background:white; border:1px solid #e6e9ef; border-radius:8px; padding:16px; margin-bottom:12px; display:flex; align-items:flex-start; gap:16px; box-shadow: 0 1px 4px rgba(0,0,0,0.02); transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,0.02)'">
@@ -571,7 +566,7 @@ window.renderPanelContent = function(index) {
             </div>
             `;
         }).join('');
-        
+
         if (!filesHtml) filesHtml = `<div style="text-align:center; color:#676879; margin-top:40px;">No hay archivos aún.</div>`;
 
         content.innerHTML = `
@@ -600,15 +595,15 @@ window.renderPanelContent = function(index) {
     }
 }
 
-window.handleFileUpload = function(event, index) {
+window.handleFileUpload = function (event, index) {
     const files = event.target.files;
-    if(!files || files.length === 0) return;
-    
-    if(!tableData[index].archivos) tableData[index].archivos = [];
-    
-    for(let i=0; i<files.length; i++) {
+    if (!files || files.length === 0) return;
+
+    if (!tableData[index].archivos) tableData[index].archivos = [];
+
+    for (let i = 0; i < files.length; i++) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             tableData[index].archivos.unshift({
                 name: files[i].name,
                 url: e.target.result,
@@ -622,19 +617,19 @@ window.handleFileUpload = function(event, index) {
     }
 }
 
-window.deleteFile = function(rowIndex, fileIndex) {
-    if(confirm('¿Seguro de eliminar este archivo?')) {
+window.deleteFile = function (rowIndex, fileIndex) {
+    if (confirm('¿Seguro de eliminar este archivo?')) {
         tableData[rowIndex].archivos.splice(fileIndex, 1);
         saveData();
         renderPanelContent(rowIndex);
     }
 }
 
-window.likeComment = function(rowIndex, commentIndex) {
+window.likeComment = function (rowIndex, commentIndex) {
     const row = tableData[rowIndex];
-    if(!row.comentarios[commentIndex].likes) row.comentarios[commentIndex].likes = 0;
-    
-    if(row.comentarios[commentIndex].likedByMe) {
+    if (!row.comentarios[commentIndex].likes) row.comentarios[commentIndex].likes = 0;
+
+    if (row.comentarios[commentIndex].likedByMe) {
         row.comentarios[commentIndex].likes--;
         row.comentarios[commentIndex].likedByMe = false;
     } else {
@@ -645,25 +640,25 @@ window.likeComment = function(rowIndex, commentIndex) {
     renderPanelContent(rowIndex);
 }
 
-window.deleteComment = function(rowIndex, commentIndex) {
-    if(confirm('¿Seguro de eliminar este comentario?')) {
+window.deleteComment = function (rowIndex, commentIndex) {
+    if (confirm('¿Seguro de eliminar este comentario?')) {
         tableData[rowIndex].comentarios.splice(commentIndex, 1);
         saveData();
         renderPanelContent(rowIndex);
     }
 }
 
-window.addComment = function(index) {
+window.addComment = function (index) {
     const editor = document.getElementById('newCommentText');
     const text = editor.innerHTML.trim();
-    if(editor.innerText.trim() === '') return;
-    
-    if(!tableData[index].comentarios) tableData[index].comentarios = [];
-    
-    const profileDisplay = (allProfiles && currentUserEmail && allProfiles[currentUserEmail] && allProfiles[currentUserEmail].name) 
-                            ? allProfiles[currentUserEmail].name 
-                            : (currentUserEmail ? currentUserEmail.split('@')[0] : 'Admin');
-                            
+    if (editor.innerText.trim() === '') return;
+
+    if (!tableData[index].comentarios) tableData[index].comentarios = [];
+
+    const profileDisplay = (allProfiles && currentUserEmail && allProfiles[currentUserEmail] && allProfiles[currentUserEmail].name)
+        ? allProfiles[currentUserEmail].name
+        : (currentUserEmail ? currentUserEmail.split('@')[0] : 'Admin');
+
     tableData[index].comentarios.unshift({
         author: profileDisplay,
         date: new Date().toLocaleString(),
@@ -671,7 +666,7 @@ window.addComment = function(index) {
     });
     saveData();
     renderPanelContent(index);
-    renderRows(); 
+    renderRows();
 }
 
 // Handle Custom "Otro" value
@@ -916,7 +911,7 @@ function updateMetrics() {
     groupsData.forEach(g => grupoCounts[g.name] = 0);
     tableData.forEach(r => {
         const gp = groupsData.find(g => g.id === r.groupId);
-        if(gp) grupoCounts[gp.name]++;
+        if (gp) grupoCounts[gp.name]++;
     });
 
     if (chartGrupo) chartGrupo.destroy();
@@ -956,13 +951,13 @@ function updateMetrics() {
     // Iniciativa Chart Data
     const initCounts = {};
     tableData.forEach(r => {
-        if(r.iniciativa && r.iniciativa.trim() !== '') {
+        if (r.iniciativa && r.iniciativa.trim() !== '') {
             initCounts[r.iniciativa] = (initCounts[r.iniciativa] || 0) + 1;
         }
     });
-    
+
     // Sort iniciativas por cantidad para mejor visualización
-    const sortedInitKeys = Object.keys(initCounts).sort((a,b) => initCounts[b] - initCounts[a]);
+    const sortedInitKeys = Object.keys(initCounts).sort((a, b) => initCounts[b] - initCounts[a]);
     const sortedInitVals = sortedInitKeys.map(k => initCounts[k]);
 
     if (chartIniciativa) chartIniciativa.destroy();
@@ -974,11 +969,11 @@ function updateMetrics() {
                 labels: sortedInitKeys.map(k => k.substring(0, 30) + (k.length > 30 ? '...' : '')),
                 datasets: [{ data: sortedInitVals, backgroundColor: '#e2445c', borderRadius: 4 }]
             },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 indexAxis: 'y',
-                plugins: { legend: { display: false } } 
+                plugins: { legend: { display: false } }
             }
         });
     }
@@ -1000,7 +995,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
     });
 });
 
-window.showCustomModal = function(title, body, type = 'confirm', placeholder = '', onConfirm) {
+window.showCustomModal = function (title, body, type = 'confirm', placeholder = '', onConfirm) {
     document.getElementById('genericModalTitle').innerText = title;
     document.getElementById('genericModalBody').innerHTML = body;
     const inputObj = document.getElementById('genericModalInput');
@@ -1013,7 +1008,7 @@ window.showCustomModal = function(title, body, type = 'confirm', placeholder = '
         inputObj.style.display = 'none';
     }
     document.getElementById('genericModalOverlay').style.display = 'flex';
-    
+
     // Replace nodes to prevent duplicate listeners
     const confirmBtn = document.getElementById('genericModalConfirmBtn');
     const newConfirmBtn = confirmBtn.cloneNode(true);
@@ -1037,7 +1032,7 @@ window.showCustomModal = function(title, body, type = 'confirm', placeholder = '
     };
 }
 
-window.deleteRow = function(index) {
+window.deleteRow = function (index) {
     showCustomModal('tablero-vtd.vercel.app dice', '¿Seguro que deseas eliminar esta fila?', 'confirm', '', () => {
         tableData.splice(index, 1);
         saveData();
@@ -1045,7 +1040,7 @@ window.deleteRow = function(index) {
     });
 }
 
-window.deleteFile = function(rowIndex, fileIndex) {
+window.deleteFile = function (rowIndex, fileIndex) {
     showCustomModal('Confirmar eliminación', '¿Seguro de eliminar este archivo?', 'confirm', '', () => {
         tableData[rowIndex].archivos.splice(fileIndex, 1);
         saveData();
@@ -1053,7 +1048,7 @@ window.deleteFile = function(rowIndex, fileIndex) {
     });
 }
 
-window.deleteComment = function(rowIndex, commentIndex) {
+window.deleteComment = function (rowIndex, commentIndex) {
     showCustomModal('Confirmar eliminación', '¿Seguro de eliminar este comentario?', 'confirm', '', () => {
         tableData[rowIndex].comentarios.splice(commentIndex, 1);
         saveData();
@@ -1061,21 +1056,21 @@ window.deleteComment = function(rowIndex, commentIndex) {
     });
 }
 
-window.promptLink = function() {
+window.promptLink = function () {
     const sel = window.getSelection();
-    if(sel.rangeCount === 0) return;
+    if (sel.rangeCount === 0) return;
     const range = sel.getRangeAt(0);
 
-    showCustomModal('Añadir Enlace', 'Ingresa la URL a continuación para vincularla al texto seleccionado:', 'prompt', 'https://...', (url) => { 
-        if(url) {
+    showCustomModal('Añadir Enlace', 'Ingresa la URL a continuación para vincularla al texto seleccionado:', 'prompt', 'https://...', (url) => {
+        if (url) {
             sel.removeAllRanges();
             sel.addRange(range);
-            document.execCommand('createLink', false, url); 
+            document.execCommand('createLink', false, url);
         }
     });
 }
 
-window.openImageViewer = function(url) {
+window.openImageViewer = function (url) {
     if (!url) return;
     document.getElementById('imageViewerPreview').src = url;
     document.getElementById('imageViewerOverlay').style.display = 'flex';
@@ -1085,28 +1080,28 @@ window.openImageViewer = function(url) {
 window.currentSearchFilter = '';
 window.currentPersonFilters = [];
 
-window.updateTableFilter = function() {
+window.updateTableFilter = function () {
     const el = document.getElementById('globalSearchInput');
     window.currentSearchFilter = el ? el.value.toLowerCase() : '';
     applyFilters();
 }
 
-window.togglePersonFilter = function(e) {
+window.togglePersonFilter = function (e) {
     const popover = document.getElementById('personFilterPopover');
     if (popover.style.display === 'block') {
         popover.style.display = 'none';
         return;
     }
-    
+
     // Position
     const rect = e.currentTarget.getBoundingClientRect();
     popover.style.top = (rect.bottom + window.scrollY + 8) + 'px';
     popover.style.left = (rect.left + window.scrollX - 50) + 'px';
-    
+
     // Populate
     let keys = Object.keys(allProfiles);
-    if(keys.length === 0 && currentUserEmail) keys = [currentUserEmail];
-    
+    if (keys.length === 0 && currentUserEmail) keys = [currentUserEmail];
+
     let html = '';
     keys.forEach(email => {
         const p = allProfiles[email] || { name: email.split('@')[0], color: '#0073ea' };
@@ -1120,12 +1115,12 @@ window.togglePersonFilter = function(e) {
             </label>
         `;
     });
-    
+
     document.getElementById('personFilterList').innerHTML = html;
     popover.style.display = 'block';
 }
 
-window.updatePersonFilter = function(email, isChecked) {
+window.updatePersonFilter = function (email, isChecked) {
     if (isChecked && !window.currentPersonFilters.includes(email)) {
         window.currentPersonFilters.push(email);
     } else if (!isChecked) {
@@ -1134,7 +1129,7 @@ window.updatePersonFilter = function(email, isChecked) {
     applyFilters();
 }
 
-window.clearPersonFilter = function() {
+window.clearPersonFilter = function () {
     window.currentPersonFilters = [];
     document.querySelectorAll('#personFilterList input').forEach(el => el.checked = false);
     applyFilters();
@@ -1150,13 +1145,13 @@ document.addEventListener('click', (e) => {
 function applyFilters() {
     const searchTerm = window.currentSearchFilter.toLowerCase();
     const persons = window.currentPersonFilters;
-    
+
     document.querySelectorAll('tbody[id^=\"group_rows_\"] tr:not(.group-columns-row):not(:last-child)').forEach((tr) => {
         const index = tr.dataset.index;
         if (!index) return;
         const row = tableData[index];
         if (!row) return;
-        
+
         let searchMatched = false;
         if (!searchTerm) {
             searchMatched = true;
@@ -1164,14 +1159,14 @@ function applyFilters() {
             const str = JSON.stringify(row).toLowerCase();
             if (str.includes(searchTerm)) searchMatched = true;
         }
-        
+
         let personMatched = false;
         if (persons.length === 0) {
             personMatched = true;
         } else if (row.responsable && row.responsable.length > 0) {
             personMatched = row.responsable.some(r => persons.includes(r.email));
         }
-        
+
         if (searchMatched && personMatched) {
             tr.style.display = '';
         } else {
